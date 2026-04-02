@@ -17,12 +17,35 @@ function App() {
     return () => socket.removeAllListeners();
   }, []);
 
+// 1. Update the handleJoin to send the TxID
   const handleJoin = () => {
-    if (!myName) return alert("Enter Name");
+    const tx = document.getElementById('txid_input').value;
+    if (!myName || !tx) return alert("Name and Transaction ID are required!");
+    
     localStorage.setItem('draftName', myName);
-    socket.emit('joinWaitingRoom', { name: myName });
-    setJoined(true);
+    // Notice: We do NOT setJoined(true) here anymore!
+    socket.emit('joinWaitingRoom', { name: myName, ticketCode: tx });
   };
+
+  // 2. Add this inside your useEffect to listen for successful entry
+  useEffect(() => {
+    socket.on('gameStateUpdate', (state) => {
+      setGameState(state);
+      // Check if WE are in the viewers list. If yes, show the Arena.
+      const iAmIn = state.allViewers.find(v => v.name === myName);
+      if (iAmIn) {
+        setJoined(true);
+      }
+    });
+    
+    socket.on('refConfirm', (val) => { setIsRef(val); setJoined(true); });
+    socket.on('error', (msg) => {
+        alert(msg);
+        setJoined(false); // Force them back to login if there is an error
+    });
+    
+    return () => socket.removeAllListeners();
+  }, [myName]); // Added myName here to keep the check fresh
 
   if (!gameState) return <div style={{color: 'white', textAlign: 'center', marginTop: '50px'}}>Loading Arena...</div>;
 
