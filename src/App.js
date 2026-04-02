@@ -22,27 +22,37 @@ function App() {
     const tx = document.getElementById('txid_input').value;
     if (!myName || !tx) return alert("Name and Transaction ID are required!");
     
+    // Save the TxID to the browser so it survives a refresh
     localStorage.setItem('draftName', myName);
-    // Notice: We do NOT setJoined(true) here anymore!
+    localStorage.setItem('myTxId', tx); 
+    
     socket.emit('joinWaitingRoom', { name: myName, ticketCode: tx });
+    // DO NOT setJoined(true) here!
   };
 
   // 2. Add this inside your useEffect to listen for successful entry
   useEffect(() => {
     socket.on('gameStateUpdate', (state) => {
       setGameState(state);
-      // Check if WE are in the viewers list. If yes, show the Arena.
-      const iAmIn = state.allViewers.find(v => v.name === myName);
-      if (iAmIn) {
+      
+      // Look for a user in the lobby that matches BOTH your name and your stored TxID
+      const savedTxId = localStorage.getItem('myTxId');
+      const iAmVerified = state.allViewers.find(v => v.name === myName && v.txId === savedTxId);
+      
+      if (iAmVerified) {
         setJoined(true);
       }
     });
     
     socket.on('refConfirm', (val) => { setIsRef(val); setJoined(true); });
+    
     socket.on('error', (msg) => {
         alert(msg);
-        setJoined(false); // Force them back to login if there is an error
+        setJoined(false); // If error, kick back to login
     });
+    
+    return () => socket.removeAllListeners();
+  }, [myName]);
     
     return () => socket.removeAllListeners();
   }, [myName]); // Added myName here to keep the check fresh
