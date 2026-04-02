@@ -24,7 +24,7 @@ function App() {
     setJoined(true);
   };
 
-  if (!gameState) return <div style={{color: 'white', textAlign: 'center', marginTop: '50px'}}>Loading Kigali Arena...</div>;
+  if (!gameState) return <div style={{color: 'white', textAlign: 'center', marginTop: '50px'}}>Loading Arena...</div>;
 
   const myUser = gameState.allViewers.find(v => v.id === socket.id);
   
@@ -39,7 +39,7 @@ function App() {
       {/* LOGIN PHASE */}
       {!joined && (
         <div style={{ textAlign: 'center', paddingTop: '80px' }}>
-          <h1 style={{color: 'gold'}}>🏟️ KIGALI DRAFT ARENA</h1>
+          <h1 style={{color: 'gold'}}>🏟️ RUHAGO N'INSHUTI ARENA</h1>
           <div style={{ background: '#111', padding: '40px', borderRadius: '15px', border: '1px solid #333', display: 'inline-block' }}>
             <h2>SPECTATOR ENTRANCE</h2>
             <input value={myName} onChange={e => setMyName(e.target.value)} placeholder="Enter Full Name" style={{padding: '12px', width: '250px'}} />
