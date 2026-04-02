@@ -41,18 +41,21 @@ function App() {
         <div style={{ textAlign: 'center', paddingTop: '80px' }}>
           <h1 style={{color: 'gold'}}>🏟️ RUHAGO N'INSHUTI ARENA</h1>
           <div style={{ background: '#111', padding: '40px', borderRadius: '15px', border: '1px solid #333', display: 'inline-block' }}>
-            <h2>SPECTATOR ENTRANCE</h2>
-            <input value={myName} onChange={e => setMyName(e.target.value)} placeholder="Enter Full Name" style={{padding: '12px', width: '250px'}} />
+            <h2>VIP PLAYER ENTRANCE</h2>
+            <input value={myName} onChange={e => setMyName(e.target.value)} placeholder="Your Full Name" style={{padding: '12px', width: '250px'}} />
             <br/><br/>
-            <button onClick={handleJoin} style={{padding: '12px 30px', background: '#28a745', color: 'white', border: 'none', cursor: 'pointer'}}>JOIN LOBBY</button>
-            <p style={{fontSize: '0.8rem', color: '#666', marginTop: '10px'}}>
-                Status: {gameState.lobbyOpen ? "🟢 Entrance Open" : "🔴 Entrance Closed"}
-            </p>
+            <input id="txid_input" placeholder="MTN Transaction ID (TxId)" style={{padding: '12px', width: '250px', background: '#000', color: 'gold', border: '1px solid gold'}} />
+            <br/><br/>
+            <button onClick={() => {
+                const tx = document.getElementById('txid_input').value;
+                socket.emit('joinWaitingRoom', { name: myName, ticketCode: tx });
+                setJoined(true);
+            }} style={{padding: '12px 30px', background: '#28a745', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold'}}>VERIFY & ENTER</button>
+            <p style={{fontSize: '0.7rem', color: '#888', marginTop: '15px'}}>Verification occurs every 15 minutes after payment.</p>
           </div>
           <div style={{ marginTop: '60px', opacity: 0.5 }}>
-            <p>Referee Portal Only</p>
-            <input type="password" placeholder="Authority ID" onChange={e => setRefToken(e.target.value)} style={{padding: '8px'}}/>
-            <button onClick={() => socket.emit('claimReferee', refToken)} style={{padding: '8px', marginLeft: '5px'}}>CLAIM</button>
+            <input type="password" placeholder="Ref ID" onChange={e => setRefToken(e.target.value)} style={{padding: '8px'}}/>
+            <button onClick={() => socket.emit('claimReferee', refToken)} style={{padding: '8px'}}>CLAIM</button>
           </div>
         </div>
       )}
