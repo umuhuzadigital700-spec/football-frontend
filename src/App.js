@@ -72,7 +72,7 @@ function App() {
             <div style={{textAlign: 'right'}}><div style={{fontSize: '1.2rem', color: 'gold'}}>{gameState.allViewers.length} ONLINE</div></div>
           </div>
 
-          {/* QR CODE DISPLAY (For Fans) */}
+          {/* QR CODE DISPLAY (Visible to Fans) */}
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '15px', flexWrap: 'wrap' }}>
             {gameState.qrCodes.map((url, i) => url && (
                 <div key={i} style={{ background: 'white', padding: '3px', borderRadius: '5px' }}>
@@ -81,7 +81,7 @@ function App() {
             ))}
           </div>
 
-          {/* REFEREE CANVAS - FIXED ASSIGNMENT LIST HERE */}
+          {/* REFEREE PANEL */}
           {isRef && (
             <div style={{ background: '#1a1a1a', border: '1px solid gold', padding: '15px', marginTop: '10px', borderRadius: '10px' }}>
               <h3 style={{margin: '0 0 10px 0', color: 'gold'}}>REFEREE CANVAS</h3>
@@ -89,7 +89,7 @@ function App() {
               <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{padding: '8px', marginLeft: '5px'}}>SAVE LINK</button>
               
               <div style={{marginTop: '15px', padding: '10px', background: '#000'}}>
-                <p style={{fontSize: '0.8rem'}}>QR URLs (6 slots):</p>
+                <p style={{fontSize: '0.8rem'}}>QR Image URLs (6 slots):</p>
                 <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5px'}}>
                    {localQRs.map((qr, i) => (
                      <input key={i} value={qr} onChange={(e) => { const updated = [...localQRs]; updated[i] = e.target.value; setLocalQRs(updated); }} style={{padding: '4px', fontSize: '0.7rem', background: '#222', color: 'white'}} />
@@ -98,25 +98,22 @@ function App() {
                 <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{marginTop: '5px', background: 'green', color: 'white', fontSize: '0.8rem'}}>PUBLISH QRS</button>
               </div>
 
-              {/* THIS IS THE LIST TO ASSIGN TEAMS */}
               <div style={{marginTop: '15px', borderTop: '1px solid #333', paddingTop: '10px'}}>
-                <p style={{color: 'gold', fontWeight: 'bold'}}>Assign Players from Lobby:</p>
-                <div style={{maxHeight: '150px', overflowY: 'auto'}}>
-                    {gameState.allViewers.map(v => (
-                        <div key={v.id} style={{padding: '5px', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between'}}>
-                            <span>{v.name}</span>
-                            <div>
-                                <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role: 'team1'})} style={{background: '#00ff00', color: 'black', marginRight: '5px'}}>Team 1</button>
-                                <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role: 'team2'})} style={{background: '#ff4d4d', color: 'white'}}>Team 2</button>
-                            </div>
+                <p style={{color: 'gold', fontWeight: 'bold'}}>Assign Players:</p>
+                {gameState.allViewers.map(v => (
+                    <div key={v.id} style={{padding: '5px', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between'}}>
+                        <span>{v.name}</span>
+                        <div>
+                            <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role: 'team1'})} style={{background: '#00ff00', marginRight: '5px'}}>T1</button>
+                            <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role: 'team2'})} style={{background: '#ff4d4d', color: 'white'}}>T2</button>
                         </div>
-                    ))}
-                </div>
+                    </div>
+                ))}
               </div>
 
               <div style={{marginTop: '15px'}}>
                 <button onClick={() => socket.emit('refReset')} style={{background: 'blue', color: 'white', padding: '8px'}}>RESET GAME</button>
-                <button onClick={() => socket.emit('refStartDraft', { teamSize: 11 })} style={{marginLeft: '10px', background: 'gold', padding: '8px', color: 'black', fontWeight: 'bold'}}>START 11vs11 DRAFT</button>
+                <button onClick={() => socket.emit('refStartDraft', { teamSize: 11 })} style={{marginLeft: '10px', background: 'gold', padding: '8px'}}>START DRAFT</button>
               </div>
             </div>
           )}
