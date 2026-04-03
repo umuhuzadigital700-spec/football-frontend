@@ -12,9 +12,8 @@ function App() {
   const [isRef, setIsRef] = useState(false);
   const [newYoutube, setNewYoutube] = useState("");
   
-  // States for Ref to update QR/Links
-  const [editLink, setEditLink] = useState({ text: "", url: "" });
-  const [editQRs, setEditQRs] = useState(["", "", "", "", "", ""]);
+  // Internal state for QR inputs on Ref Canvas
+  const [localQRs, setLocalQRs] = useState(["", "", "", "", "", ""]);
 
   useEffect(() => {
     socket.on('gameStateUpdate', (state) => {
@@ -35,11 +34,6 @@ function App() {
     socket.emit('joinWaitingRoom', { name: myName, ticketCode: myTxId });
   };
 
-  const updateExtraInfo = () => {
-    socket.emit('refUpdateExtraInfo', { qrCodes: editQRs, customLink: editLink });
-    alert("Information Updated!");
-  };
-
   if (!gameState) return <div style={{color: 'white', textAlign: 'center', marginTop: '50px'}}>Connecting...</div>;
 
   const myUser = gameState.allViewers.find(v => v.id === socket.id);
@@ -47,6 +41,7 @@ function App() {
 
   return (
     <div style={{ backgroundColor: '#050505', color: '#eee', minHeight: '100vh', fontFamily: 'Arial' }}>
+      
       {!joined && (
         <div style={{ textAlign: 'center', paddingTop: '80px' }}>
           <h1 style={{color: 'gold'}}>🏟️ RUHAGO N'INSHUTI ARENA</h1>
@@ -68,58 +63,80 @@ function App() {
 
       {joined && (
         <div style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '15px', borderRadius: '10px', borderBottom: '2px solid gold' }}>
+          {/* HEADER SECTION - FIXED LINK BUTTON */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '15px', borderRadius: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
             <div>
                 <div style={{fontSize: '0.8rem', color: 'gold'}}>PLAYER: {isRef ? "👑 ERIC" : myName}</div>
                 <div style={{fontSize: '1rem'}}>ROLE: {myUser?.role?.toUpperCase() || "SPECTATOR"}</div>
             </div>
             <div style={{textAlign: 'center'}}>
-                <a href={gameState.youtubeLink} target="_blank" rel="noreferrer" style={{background: 'red', color: 'white', padding: '10px 20px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold'}}>▶️ WATCH LIVE ON YOUTUBE</a>
+                {/* Robust <a> tag for mobile compatibility */}
+                <a 
+                  href={gameState.youtubeLink} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  style={{background: 'red', color: 'white', padding: '12px 25px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block'}}
+                >
+                  ▶️ WATCH LIVE ON YOUTUBE
+                </a>
             </div>
             <div style={{textAlign: 'right'}}>
                 <div style={{fontSize: '0.8rem', color: 'gold'}}>LOBBY: {gameState.allViewers.length} ONLINE</div>
             </div>
           </div>
 
+          {/* REFEREE PANEL - WITH 6 QR PLACES */}
           {isRef && (
             <div style={{ background: '#1a1a1a', border: '1px solid gold', padding: '15px', marginTop: '10px', borderRadius: '10px' }}>
-              <h3>REF PANEL: EXTRA CONTROLS</h3>
-              <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="Youtube URL" style={{padding: '5px'}} />
-              <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)}>Update YT</button>
+              <h3 style={{margin: '0 0 10px 0', color: 'gold'}}>REFEREE CANVAS</h3>
+              <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="Update Youtube Link" style={{padding: '8px', width: '300px'}} />
+              <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{padding: '8px', marginLeft: '5px'}}>SAVE LINK</button>
               
-              <div style={{marginTop: '10px', display: 'flex', gap: '10px'}}>
-                <input placeholder="Link Text" onChange={e => setEditLink({...editLink, text: e.target.value})} style={{padding: '5px'}} />
-                <input placeholder="Link URL" onChange={e => setEditLink({...editLink, url: e.target.value})} style={{padding: '5px'}} />
+              <div style={{marginTop: '15px', padding: '10px', background: '#000', borderRadius: '8px'}}>
+                <p style={{margin: '0 0 5px 0', fontSize: '0.9rem'}}>6 QR Image Locations (Store URLs here):</p>
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5px'}}>
+                   {localQRs.map((qr, i) => (
+                     <input 
+                       key={i} 
+                       placeholder={`QR URL ${i+1}`} 
+                       value={qr} 
+                       onChange={(e) => {
+                         const updated = [...localQRs];
+                         updated[i] = e.target.value;
+                         setLocalQRs(updated);
+                       }}
+                       style={{padding: '5px', fontSize: '0.8rem', background: '#222', color: 'white', border: '1px solid #444'}}
+                     />
+                   ))}
+                </div>
+                <button 
+                   onClick={() => {
+                     socket.emit('refUpdateQRs', localQRs);
+                     alert("QR Canvas Saved!");
+                   }} 
+                   style={{marginTop: '10px', background: 'green', color: 'white', padding: '5px 15px', borderRadius: '5px'}}
+                >
+                  SAVE QR PLACES
+                </button>
               </div>
 
-              <div style={{marginTop: '10px'}}>
-                <p>QR Image URLs (6 Places):</p>
-                {editQRs.map((qr, i) => (
-                    <input key={i} placeholder={`QR URL ${i+1}`} onChange={e => {
-                        let newQrs = [...editQRs];
-                        newQrs[i] = e.target.value;
-                        setEditQRs(newQrs);
-                    }} style={{marginRight: '5px', width: '100px'}} />
+              <div style={{marginTop: '15px'}}>
+                <button onClick={() => socket.emit('refReset')} style={{background: 'blue', color: 'white', padding: '8px'}}>RESET GAME</button>
+                <button onClick={() => socket.emit('refStartDraft', { teamSize: 11 })} style={{marginLeft: '10px', background: 'gold', padding: '8px', color: 'black', fontWeight: 'bold'}}>START DRAFT</button>
+              </div>
+
+              <div style={{marginTop: '10px', fontSize: '0.8rem'}}>
+                Lobby: {gameState.allViewers.map(v => (
+                  <span key={v.id} style={{marginRight: '10px', padding: '5px', background: '#000'}}>
+                    {v.name} <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role: 'team1'})}>T1</button>
+                    <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role: 'team2'})}>T2</button>
+                  </span>
                 ))}
               </div>
-              <button onClick={updateExtraInfo} style={{marginTop: '10px', background: 'green', color: 'white'}}>SAVE QR & CUSTOM LINK</button>
-              <button onClick={() => socket.emit('refReset')} style={{marginLeft: '10px'}}>RESET BOARD</button>
             </div>
           )}
 
-          {/* CUSTOM LINK & QR SECTION FOR FANS */}
-          <div style={{marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center', background: '#111', padding: '15px', borderRadius: '10px'}}>
-             <div style={{textAlign: 'center', width: '100%'}}>
-                <a href={gameState.customLink.url} target="_blank" rel="noreferrer" style={{color: '#00ff00', fontSize: '1.2rem', fontWeight: 'bold'}}>{gameState.customLink.text}</a>
-             </div>
-             {gameState.qrCodes.map((url, i) => url && (
-                <div key={i} style={{background: 'white', padding: '5px', borderRadius: '5px'}}>
-                    <img src={url} alt={`QR ${i}`} style={{width: '80px', height: '80px'}} />
-                </div>
-             ))}
-          </div>
-
-          {/* DRAFTING BOARD (Logic remains untouched) */}
+          {/* GAME BOARD SECTION (Untouched Logic) */}
           {gameState.gameStarted && (
             <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
               <div style={{ flex: 3 }}>
