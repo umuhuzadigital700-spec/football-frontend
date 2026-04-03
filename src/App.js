@@ -41,7 +41,6 @@ function App() {
 
   return (
     <div style={{ backgroundColor: '#050505', color: '#eee', minHeight: '100vh', fontFamily: 'Arial' }}>
-      
       {!joined && (
         <div style={{ textAlign: 'center', paddingTop: '80px' }}>
           <h1 style={{color: 'gold'}}>🏟️ RUHAGO N'INSHUTI ARENA</h1>
@@ -61,69 +60,63 @@ function App() {
 
       {joined && (
         <div style={{ padding: '20px' }}>
-          {/* HEADER - WORKING LINK BUTTON */}
+          {/* HEADER SECTION */}
           <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '15px', borderRadius: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
             <div>
                 <div style={{fontSize: '0.8rem', color: 'gold'}}>PLAYER: {isRef ? "👑 ERIC" : myName}</div>
                 <div style={{fontSize: '1rem'}}>ROLE: {myUser?.role?.toUpperCase() || "SPECTATOR"}</div>
             </div>
             <div style={{textAlign: 'center'}}>
-                {/* This button will work with any URL you paste in the Ref Panel */}
-                <a 
-                  href={gameState.youtubeLink} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  style={{background: 'red', color: 'white', padding: '12px 25px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block'}}
-                >
-                  ▶️ WATCH LIVE NOW
-                </a>
+                <a href={gameState.youtubeLink} target="_blank" rel="noopener noreferrer" style={{background: 'red', color: 'white', padding: '12px 25px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block'}}>▶️ WATCH LIVE ON YOUTUBE</a>
             </div>
-            <div style={{textAlign: 'right'}}>
-                <div style={{fontSize: '0.8rem', color: 'gold'}}>LOBBY: {gameState.allViewers.length} ONLINE</div>
-            </div>
+            <div style={{textAlign: 'right'}}><div style={{fontSize: '1.2rem', color: 'gold'}}>{gameState.allViewers.length} ONLINE</div></div>
           </div>
 
-          {/* QR CODE SCANNABLE DISPLAY (Visible to everyone if a URL is provided) */}
-          <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '15px', flexWrap: 'wrap' }}>
-            {gameState.qrCodes.map((url, index) => (
-              url ? (
-                <div key={index} style={{ background: 'white', padding: '5px', borderRadius: '5px', border: '2px solid gold' }}>
-                  <img src={url} alt={`QR ${index + 1}`} style={{ width: '100px', height: '100px', display: 'block' }} />
+          {/* QR CODE DISPLAY (For Fans) */}
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '15px', flexWrap: 'wrap' }}>
+            {gameState.qrCodes.map((url, i) => url && (
+                <div key={i} style={{ background: 'white', padding: '3px', borderRadius: '5px' }}>
+                  <img src={url} alt="QR" style={{ width: '90px', height: '90px', display: 'block' }} />
                 </div>
-              ) : null
             ))}
           </div>
 
-          {/* REFEREE PANEL */}
+          {/* REFEREE CANVAS - FIXED ASSIGNMENT LIST HERE */}
           {isRef && (
             <div style={{ background: '#1a1a1a', border: '1px solid gold', padding: '15px', marginTop: '10px', borderRadius: '10px' }}>
               <h3 style={{margin: '0 0 10px 0', color: 'gold'}}>REFEREE CANVAS</h3>
-              <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="Paste any Link here" style={{padding: '8px', width: '300px'}} />
+              <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="YouTube Link" style={{padding: '8px', width: '250px'}} />
               <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{padding: '8px', marginLeft: '5px'}}>SAVE LINK</button>
               
-              <div style={{marginTop: '15px', padding: '10px', background: '#000', borderRadius: '8px'}}>
-                <p style={{margin: '0 0 5px 0', fontSize: '0.9rem'}}>Enter Image URLs for scannable QRs:</p>
+              <div style={{marginTop: '15px', padding: '10px', background: '#000'}}>
+                <p style={{fontSize: '0.8rem'}}>QR URLs (6 slots):</p>
                 <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5px'}}>
                    {localQRs.map((qr, i) => (
-                     <input 
-                       key={i} 
-                       placeholder={`QR URL ${i+1}`} 
-                       value={qr} 
-                       onChange={(e) => {
-                         const updated = [...localQRs];
-                         updated[i] = e.target.value;
-                         setLocalQRs(updated);
-                       }}
-                       style={{padding: '5px', fontSize: '0.8rem', background: '#222', color: 'white', border: '1px solid #444'}}
-                     />
+                     <input key={i} value={qr} onChange={(e) => { const updated = [...localQRs]; updated[i] = e.target.value; setLocalQRs(updated); }} style={{padding: '4px', fontSize: '0.7rem', background: '#222', color: 'white'}} />
                    ))}
                 </div>
-                <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{marginTop: '10px', background: 'green', color: 'white', padding: '5px 15px', borderRadius: '5px'}}>SAVE QR PLACES</button>
+                <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{marginTop: '5px', background: 'green', color: 'white', fontSize: '0.8rem'}}>PUBLISH QRS</button>
+              </div>
+
+              {/* THIS IS THE LIST TO ASSIGN TEAMS */}
+              <div style={{marginTop: '15px', borderTop: '1px solid #333', paddingTop: '10px'}}>
+                <p style={{color: 'gold', fontWeight: 'bold'}}>Assign Players from Lobby:</p>
+                <div style={{maxHeight: '150px', overflowY: 'auto'}}>
+                    {gameState.allViewers.map(v => (
+                        <div key={v.id} style={{padding: '5px', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between'}}>
+                            <span>{v.name}</span>
+                            <div>
+                                <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role: 'team1'})} style={{background: '#00ff00', color: 'black', marginRight: '5px'}}>Team 1</button>
+                                <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role: 'team2'})} style={{background: '#ff4d4d', color: 'white'}}>Team 2</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
               </div>
 
               <div style={{marginTop: '15px'}}>
                 <button onClick={() => socket.emit('refReset')} style={{background: 'blue', color: 'white', padding: '8px'}}>RESET GAME</button>
-                <button onClick={() => socket.emit('refStartDraft', { teamSize: 11 })} style={{marginLeft: '10px', background: 'gold', padding: '8px', color: 'black', fontWeight: 'bold'}}>START DRAFT</button>
+                <button onClick={() => socket.emit('refStartDraft', { teamSize: 11 })} style={{marginLeft: '10px', background: 'gold', padding: '8px', color: 'black', fontWeight: 'bold'}}>START 11vs11 DRAFT</button>
               </div>
             </div>
           )}
