@@ -12,12 +12,15 @@ function App() {
   const [isRef, setIsRef] = useState(false);
   const [newYoutube, setNewYoutube] = useState("");
   const [localQRs, setLocalQRs] = useState(["", "", "", "", "", ""]);
+  
+  // This ref ensures background updates (QRs/Links) don't reset the draft UI
   const hasVerified = useRef(false);
 
   useEffect(() => {
     socket.on('gameStateUpdate', (state) => {
         setGameState(state);
-        // Only verify joining if not already joined to prevent logic loops
+        
+        // Auto-join logic only runs if the user hasn't been verified in this session
         if (!hasVerified.current && !isRef) {
             const savedTx = localStorage.getItem('myTxId');
             const verified = state.allViewers.find(v => v.name === myName && v.txId === savedTx);
@@ -26,7 +29,11 @@ function App() {
                 hasVerified.current = true;
             }
         }
-        if (state.qrCodes && isRef) setLocalQRs(state.qrCodes);
+        
+        // Update Referee's QR inputs only if they are the Ref
+        if (state.qrCodes && isRef) {
+            setLocalQRs(state.qrCodes);
+        }
     });
 
     socket.on('clearArenaForce', () => {
@@ -80,6 +87,7 @@ function App() {
 
       {joined && (
         <div style={{ padding: '20px' }}>
+          {/* HEADER SECTION */}
           <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '15px', borderRadius: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
             <div>
                 <div style={{fontSize: '0.8rem', color: 'gold'}}>PLAYER: {isRef ? "ERIC (REF)" : myName}</div>
@@ -93,6 +101,7 @@ function App() {
             <div style={{textAlign: 'right'}}><div style={{fontSize: '1.2rem', color: 'gold'}}>{gameState.allViewers.length} ONLINE</div></div>
           </div>
 
+          {/* QR CODES DISPLAY */}
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '15px', flexWrap: 'wrap' }}>
             {gameState.qrCodes.map((url, i) => url && (
                 <div key={i} style={{ background: 'white', padding: '3px', borderRadius: '5px' }}>
@@ -101,11 +110,12 @@ function App() {
             ))}
           </div>
 
+          {/* REFEREE CANVAS */}
           {isRef && (
             <div style={{ background: '#1a1a1a', border: '2px solid gold', padding: '15px', marginTop: '15px', borderRadius: '10px' }}>
               <h3 style={{color: 'gold', margin: '0 0 10px 0'}}>REFEREE CANVAS</h3>
               <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="YouTube Link" style={{padding: '8px', width: '250px'}} />
-              <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{padding: '8px', marginLeft: '5px', background: 'gold'}}>SAVE LINK</button>
+              <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{padding: '8px', marginLeft: '5px', background: 'gold', color: 'black'}}>SAVE LINK</button>
               
               <div style={{marginTop: '15px', padding: '10px', background: '#000', border: '1px solid #333'}}>
                 <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5px'}}>
@@ -113,7 +123,7 @@ function App() {
                      <input key={i} value={qr} onChange={(e) => { const updated = [...localQRs]; updated[i] = e.target.value; setLocalQRs(updated); }} style={{padding: '4px', fontSize: '0.7rem', background: '#222', color: 'white'}} />
                    ))}
                 </div>
-                <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{marginTop: '10px', background: 'green', color: 'white', padding: '5px 15px'}}>PUBLISH QRS</button>
+                <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{marginTop: '10px', background: 'green', color: 'white', padding: '5px 15px', border: 'none', cursor: 'pointer'}}>PUBLISH QRS</button>
               </div>
 
               <div style={{marginTop: '15px', background: '#222', padding: '10px'}}>
@@ -134,13 +144,14 @@ function App() {
               </div>
 
               <div style={{marginTop: '15px', display: 'flex', gap: '10px'}}>
-                <button onClick={() => socket.emit('refReset')} style={{background: 'blue', color: 'white', padding: '10px'}}>RESET GAME</button>
-                <button onClick={() => socket.emit('refStartDraft')} style={{background: 'gold', padding: '10px', color: 'black', fontWeight: 'bold'}}>START</button>
-                <button onClick={() => socket.emit('refClearArena')} style={{background: 'purple', color: 'white', padding: '10px'}}>CLEAR ARENA</button>
+                <button onClick={() => socket.emit('refReset')} style={{background: 'blue', color: 'white', padding: '10px', border: 'none'}}>RESET GAME</button>
+                <button onClick={() => socket.emit('refStartDraft')} style={{background: 'gold', padding: '10px', color: 'black', fontWeight: 'bold', border: 'none'}}>START</button>
+                <button onClick={() => socket.emit('refClearArena')} style={{background: 'purple', color: 'white', padding: '10px', border: 'none'}}>CLEAR ARENA</button>
               </div>
             </div>
           )}
 
+          {/* DRAFTING BOARD */}
           {gameState.gameStarted && (
             <div style={{ marginTop: '20px' }}>
               <div style={{textAlign: 'center', padding: '10px', background: '#222', marginBottom: '10px', border: '1px solid gold'}}>
