@@ -12,7 +12,6 @@ function App() {
   const [isRef, setIsRef] = useState(false);
   const [newYoutube, setNewYoutube] = useState("");
   const [localQRs, setLocalQRs] = useState(["", "", "", "", "", ""]);
-  
   const hasAutoJoined = useRef(false);
 
   useEffect(() => {
@@ -61,14 +60,13 @@ function App() {
             <input value={myTxId} onChange={e => setMyTxId(e.target.value)} placeholder="TxID" style={{padding:'10px', width:'200px', border:'1px solid gold'}} /><br/><br/>
             <button onClick={handleJoin} style={{padding:'10px 20px', background:'#28a745', color:'white', fontWeight:'bold'}}>ENTER</button>
           </div>
-          <div style={{marginTop:'50px', opacity:0.2}}>
+          <div style={{marginTop:'50px', opacity:0.1}}>
             <input type="password" onChange={e => setRefToken(e.target.value)} style={{width:'80px'}}/>
             <button onClick={() => socket.emit('claimReferee', refToken)}>REF</button>
           </div>
         </div>
       ) : (
         <div style={{ padding: '15px' }}>
-          {/* HEADER */}
           <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
             <div>
                 <div style={{fontSize: '0.7rem', color: 'gold'}}>PLAYER: {isRef ? "ERIC" : myName}</div>
@@ -78,16 +76,18 @@ function App() {
             <div style={{fontSize: '1rem', color: 'gold'}}>{gameState.allViewers.length} 👤</div>
           </div>
 
-          {/* QRS */}
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '10px', flexWrap: 'wrap' }}>
-            {gameState.qrCodes.map((url, i) => url && (
-                <div key={i} style={{ background: 'white', padding: '2px', borderRadius: '4px' }}>
-                  <img src={url} alt="QR" style={{ width: '85px', height: '85px' }} />
-                </div>
-            ))}
-          </div>
+          {/* QR CODES - ONLY FOR REFEREE */}
+          {isRef && (
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '10px', flexWrap: 'wrap' }}>
+              {gameState.qrCodes.map((url, i) => url && (
+                  <div key={i} style={{ background: 'white', padding: '2px', borderRadius: '4px' }}>
+                    <img src={url} alt="QR" style={{ width: '85px', height: '85px' }} />
+                  </div>
+              ))}
+            </div>
+          )}
 
-          {/* REF PANEL */}
+          {/* REFEREE PANEL */}
           {isRef && (
             <div style={{ background: '#1a1a1a', border: '1px solid gold', padding: '10px', marginTop: '10px' }}>
               <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="Link" style={{width:'150px'}} />
@@ -115,51 +115,39 @@ function App() {
             </div>
           )}
 
-          {/* DRAFT */}
-          // Change just the Draft Board section in your App.js:
-
-{gameState.gameStarted && (
-  <div style={{ marginTop: '15px' }}>
-    <div style={{textAlign: 'center', padding: '5px', background: '#222', border: '1px solid gold'}}>
-       <h3 style={{color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44', margin: 0}}>
-         TURN: {gameState.currentTurn.toUpperCase()}
-       </h3>
-    </div>
-    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-      {/* ADDED KEY HERE TO PREVENT UI FREEZE */}
-      <div key={gameState.availableCards.length} style={{ flex: 2, display: 'flex', flexWrap: 'wrap', gap: '5px', maxHeight: '50vh', overflowY: 'auto' }}>
-        {gameState.availableCards.map(c => (
-          <div 
-            key={c.id} 
-            onClick={() => socket.emit('playerPickCard', c.id)} 
-            style={{ 
-              border: '1px solid #444', 
-              padding: '5px', 
-              width: '75px', 
-              background: '#111', 
-              fontSize:'0.7rem', 
-              cursor: (myUser?.role === gameState.currentTurn) ? 'pointer' : 'not-allowed',
-              opacity: (myUser?.role === gameState.currentTurn) ? 1 : 0.4 
-            }}
-          >
-            <b>{c.name}</b><br/>
-            <span style={{color:'gold'}}>{c.pos}</span><br/>
-            <span style={{color:'#0f0'}}>{c.points} pts</span>
-          </div>
-        ))}
-      </div>
-      
-      <div style={{ flex: 1, fontSize:'0.7rem' }}>
-          <div style={{ background: '#111', padding: '5px', border: '1px solid #333' }}>
-              <b style={{color:'#0f0'}}>T1 ({gameState.team1Picks.length}/11)</b>
-          </div>
-          <div style={{ background: '#111', padding: '5px', border: '1px solid #333', marginTop: '5px' }}>
-              <b style={{color:'#f44'}}>T2 ({gameState.team2Picks.length}/11)</b>
-          </div>
-      </div>
-    </div>
-  </div>
-)}
+          {/* DRAFT BOARD */}
+          {gameState.gameStarted && (
+            <div style={{ marginTop: '15px' }}>
+              <div style={{textAlign: 'center', padding: '5px', background: '#222', border: '1px solid gold'}}>
+                 <h3 style={{color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44', margin: 0}}>TURN: {gameState.currentTurn.toUpperCase()}</h3>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <div key={gameState.availableCards.length} style={{ flex: 2, display: 'flex', flexWrap: 'wrap', gap: '5px', maxHeight: '50vh', overflowY: 'auto' }}>
+                  {gameState.availableCards.map(c => (
+                    <div key={c.id} onClick={() => socket.emit('playerPickCard', c.id)} style={{ border: '1px solid #444', padding: '5px', width: '75px', background: '#111', fontSize:'0.7rem', opacity: myUser?.role===gameState.currentTurn ? 1 : 0.4 }}>
+                      <b>{c.name}</b><br/><span style={{color:'gold'}}>{c.pos}</span><br/><span style={{color:'#0f0'}}>{c.points} pts</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ flex: 1.2, fontSize:'0.7rem' }}>
+                    <div style={{ background: '#111', padding: '5px', border: '1px solid #0f0', marginBottom: '8px' }}>
+                        <b style={{color:'#0f0'}}>T1: {gameState.team1Player?.name || "?"}</b><br/>
+                        {calcPts(gameState.team1Picks)} pts ({gameState.team1Picks.length}/11)
+                        <div style={{marginTop:'5px', color:'#aaa'}}>
+                            {gameState.team1Picks.map((p,i) => <div key={i}>• {p.name}</div>)}
+                        </div>
+                    </div>
+                    <div style={{ background: '#111', padding: '5px', border: '1px solid #f44' }}>
+                        <b style={{color:'#f44'}}>T2: {gameState.team2Player?.name || "?"}</b><br/>
+                        {calcPts(gameState.team2Picks)} pts ({gameState.team2Picks.length}/11)
+                        <div style={{marginTop:'5px', color:'#aaa'}}>
+                            {gameState.team2Picks.map((p,i) => <div key={i}>• {p.name}</div>)}
+                        </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
