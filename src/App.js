@@ -131,13 +131,10 @@ function App() {
           {gameState.gameStarted && (
             <div style={{ marginTop: '20px' }}>
               <div style={{textAlign: 'center', padding: '10px', background: '#222', marginBottom: '10px', border: '1px solid gold'}}>
-                 // AFTER — handle FINISHED state cleanly
-<h2 style={{color: gameState.currentTurn === 'FINISHED' ? 'gold' : gameState.currentTurn === 'team1' ? '#00ff00' : '#ff4d4d', margin: 0}}>
-    {gameState.currentTurn === 'FINISHED'
-        ? "🏆 DRAFT COMPLETE!"
-        : <>TURN: {gameState.currentTurn.toUpperCase()}{(myUser?.role === gameState.currentTurn) ? " (YOUR TURN!)" : ""}</>
-    }
-</h2>
+                 <h2 style={{color: gameState.currentTurn === 'team1' ? '#00ff00' : '#ff4d4d', margin: 0}}>
+                    TURN: {gameState.currentTurn.toUpperCase()} 
+                    { (myUser?.role === gameState.currentTurn) ? " (YOUR TURN!)" : "" }
+                 </h2>
               </div>
               <div style={{ display: 'flex', gap: '20px' }}>
                 <div style={{ flex: 3 }}>
