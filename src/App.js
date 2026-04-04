@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 
 const socket = io('https://football-backend-ykso.onrender.com');
@@ -12,25 +12,44 @@ function App() {
   const [isRef, setIsRef] = useState(false);
   const [newYoutube, setNewYoutube] = useState("");
   const [localQRs, setLocalQRs] = useState(["", "", "", "", "", ""]);
+  
+  // Prevent re-entry logic from firing on every QR update
+  const hasVerified = useRef(false);
 
   useEffect(() => {
     socket.on('gameStateUpdate', (state) => {
         setGameState(state);
-        const savedTx = localStorage.getItem('myTxId');
-        const verified = state.allViewers.find(v => v.name === myName && v.txId === savedTx);
-        if (verified) setJoined(true);
-        else if (!isRef) setJoined(false); 
-        if (state.qrCodes && isRef) setLocalQRs(state.qrCodes);
+        
+        if (!hasVerified.current && !isRef) {
+            const savedTx = localStorage.getItem('myTxId');
+            const verified = state.allViewers.find(v => v.name === myName && v.txId === savedTx);
+            if (verified) {
+                setJoined(true);
+                hasVerified.current = true;
+            }
+        }
+        
+        // Background update for QRs without resetting the UI
+        if (state.qrCodes && isRef) {
+            setLocalQRs(state.qrCodes);
+        }
     });
 
     socket.on('clearArenaForce', () => {
         localStorage.removeItem('myTxId');
+        hasVerified.current = false;
         setJoined(false);
         if(!isRef) window.location.reload(); 
     });
 
-    socket.on('refConfirm', (val) => { setIsRef(val); setJoined(true); });
+    socket.on('refConfirm', (val) => { 
+        setIsRef(val); 
+        setJoined(true); 
+        hasVerified.current = true;
+    });
+
     socket.on('error', (msg) => { alert(msg); });
+    
     return () => socket.removeAllListeners();
   }, [myName, isRef]);
 
@@ -77,7 +96,7 @@ function App() {
             <div style={{textAlign: 'center'}}>
                 <a href={gameState.youtubeLink} target="_blank" rel="noopener noreferrer" style={{background: 'red', color: 'white', padding: '12px 25px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block'}}>▶️ WATCH LIVE NOW</a>
             </div>
-            <div style={{textAlign: 'right'}}><div style={{fontSize: '1.2rem', color: 'gold'}}>{gameState.allViewers.length} USERS</div></div>
+            <div style={{textAlign: 'right'}}><div style={{fontSize: '1.2rem', color: 'gold'}}>{gameState.allViewers.length} ONLINE</div></div>
           </div>
 
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '15px', flexWrap: 'wrap' }}>
@@ -178,5 +197,3 @@ function App() {
   );
 }
 export default App;
-
-
