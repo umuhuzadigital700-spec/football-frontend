@@ -77,7 +77,7 @@ function App() {
             <div style={{textAlign: 'center'}}>
                 <a href={gameState.youtubeLink} target="_blank" rel="noopener noreferrer" style={{background: 'red', color: 'white', padding: '12px 25px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block'}}>▶️ WATCH LIVE NOW</a>
             </div>
-            <div style={{textAlign: 'right'}}><div style={{fontSize: '1.2rem', color: 'gold'}}>{gameState.allViewers.length} ONLINE</div></div>
+            <div style={{textAlign: 'right'}}><div style={{fontSize: '1.2rem', color: 'gold'}}>{gameState.allViewers.length} USERS</div></div>
           </div>
 
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '15px', flexWrap: 'wrap' }}>
@@ -131,10 +131,13 @@ function App() {
           {gameState.gameStarted && (
             <div style={{ marginTop: '20px' }}>
               <div style={{textAlign: 'center', padding: '10px', background: '#222', marginBottom: '10px', border: '1px solid gold'}}>
-                 <h2 style={{color: gameState.currentTurn === 'team1' ? '#00ff00' : '#ff4d4d', margin: 0}}>
-                    TURN: {gameState.currentTurn.toUpperCase()} 
-                    { (myUser?.role === gameState.currentTurn) ? " (YOUR TURN!)" : "" }
-                 </h2>
+                 // AFTER — handle FINISHED state cleanly
+<h2 style={{color: gameState.currentTurn === 'FINISHED' ? 'gold' : gameState.currentTurn === 'team1' ? '#00ff00' : '#ff4d4d', margin: 0}}>
+    {gameState.currentTurn === 'FINISHED'
+        ? "🏆 DRAFT COMPLETE!"
+        : <>TURN: {gameState.currentTurn.toUpperCase()}{(myUser?.role === gameState.currentTurn) ? " (YOUR TURN!)" : ""}</>
+    }
+</h2>
               </div>
               <div style={{ display: 'flex', gap: '20px' }}>
                 <div style={{ flex: 3 }}>
@@ -178,3 +181,5 @@ function App() {
   );
 }
 export default App;
+
+
