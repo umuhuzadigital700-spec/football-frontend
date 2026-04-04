@@ -77,7 +77,7 @@ function App() {
             <div style={{textAlign: 'center'}}>
                 <a href={gameState.youtubeLink} target="_blank" rel="noopener noreferrer" style={{background: 'red', color: 'white', padding: '12px 25px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block'}}>▶️ WATCH LIVE NOW</a>
             </div>
-            <div style={{textAlign: 'right'}}><div style={{fontSize: '1.2rem', color: 'gold'}}>{gameState.allViewers.length} USERS</div></div>
+            <div style={{textAlign: 'right'}}><div style={{fontSize: '1.2rem', color: 'gold'}}>{gameState.allViewers.length} ONLINE</div></div>
           </div>
 
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '15px', flexWrap: 'wrap' }}>
