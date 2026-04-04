@@ -116,30 +116,50 @@ function App() {
           )}
 
           {/* DRAFT */}
-          {gameState.gameStarted && (
-            <div style={{ marginTop: '15px' }}>
-              <div style={{textAlign: 'center', padding: '5px', background: '#222', border: '1px solid gold'}}>
-                 <h3 style={{color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44', margin: 0}}>TURN: {gameState.currentTurn.toUpperCase()}</h3>
-              </div>
-              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                <div style={{ flex: 2, display: 'flex', flexWrap: 'wrap', gap: '5px', maxHeight: '50vh', overflowY: 'auto' }}>
-                  {gameState.availableCards.map(c => (
-                    <div key={c.id} onClick={() => socket.emit('playerPickCard', c.id)} style={{ border: '1px solid #444', padding: '5px', width: '75px', background: '#111', fontSize:'0.7rem', opacity: myUser?.role===gameState.currentTurn ? 1 : 0.4 }}>
-                      <b>{c.name}</b><br/><span style={{color:'gold'}}>{c.pos}</span><br/><span style={{color:'#0f0'}}>{c.points} pts</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ flex: 1, fontSize:'0.7rem' }}>
-                    <div style={{ background: '#111', padding: '5px', border: '1px solid #333' }}>
-                        <b style={{color:'#0f0'}}>T1 ({gameState.team1Picks.length}/11)</b><br/>{calcPts(gameState.team1Picks)} pts
-                    </div>
-                    <div style={{ background: '#111', padding: '5px', border: '1px solid #333', marginTop: '5px' }}>
-                        <b style={{color:'#f44'}}>T2 ({gameState.team2Picks.length}/11)</b><br/>{calcPts(gameState.team2Picks)} pts
-                    </div>
-                </div>
-              </div>
-            </div>
-          )}
+          // Change just the Draft Board section in your App.js:
+
+{gameState.gameStarted && (
+  <div style={{ marginTop: '15px' }}>
+    <div style={{textAlign: 'center', padding: '5px', background: '#222', border: '1px solid gold'}}>
+       <h3 style={{color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44', margin: 0}}>
+         TURN: {gameState.currentTurn.toUpperCase()}
+       </h3>
+    </div>
+    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+      {/* ADDED KEY HERE TO PREVENT UI FREEZE */}
+      <div key={gameState.availableCards.length} style={{ flex: 2, display: 'flex', flexWrap: 'wrap', gap: '5px', maxHeight: '50vh', overflowY: 'auto' }}>
+        {gameState.availableCards.map(c => (
+          <div 
+            key={c.id} 
+            onClick={() => socket.emit('playerPickCard', c.id)} 
+            style={{ 
+              border: '1px solid #444', 
+              padding: '5px', 
+              width: '75px', 
+              background: '#111', 
+              fontSize:'0.7rem', 
+              cursor: (myUser?.role === gameState.currentTurn) ? 'pointer' : 'not-allowed',
+              opacity: (myUser?.role === gameState.currentTurn) ? 1 : 0.4 
+            }}
+          >
+            <b>{c.name}</b><br/>
+            <span style={{color:'gold'}}>{c.pos}</span><br/>
+            <span style={{color:'#0f0'}}>{c.points} pts</span>
+          </div>
+        ))}
+      </div>
+      
+      <div style={{ flex: 1, fontSize:'0.7rem' }}>
+          <div style={{ background: '#111', padding: '5px', border: '1px solid #333' }}>
+              <b style={{color:'#0f0'}}>T1 ({gameState.team1Picks.length}/11)</b>
+          </div>
+          <div style={{ background: '#111', padding: '5px', border: '1px solid #333', marginTop: '5px' }}>
+              <b style={{color:'#f44'}}>T2 ({gameState.team2Picks.length}/11)</b>
+          </div>
+      </div>
+    </div>
+  </div>
+)}
         </div>
       )}
     </div>
