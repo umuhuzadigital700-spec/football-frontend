@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'; // FIXED: Added useRef here
+import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 
 const socket = io('https://football-backend-ykso.onrender.com');
@@ -17,10 +17,14 @@ function App() {
   useEffect(() => {
     socket.on('gameStateUpdate', (state) => {
         setGameState(state);
+        // Only verify joining if not already joined to prevent logic loops
         if (!hasVerified.current && !isRef) {
             const savedTx = localStorage.getItem('myTxId');
             const verified = state.allViewers.find(v => v.name === myName && v.txId === savedTx);
-            if (verified) { setJoined(true); hasVerified.current = true; }
+            if (verified) {
+                setJoined(true);
+                hasVerified.current = true;
+            }
         }
         if (state.qrCodes && isRef) setLocalQRs(state.qrCodes);
     });
@@ -32,8 +36,14 @@ function App() {
         if(!isRef) window.location.reload(); 
     });
 
-    socket.on('refConfirm', (val) => { setIsRef(val); setJoined(true); hasVerified.current = true; });
+    socket.on('refConfirm', (val) => { 
+        setIsRef(val); 
+        setJoined(true); 
+        hasVerified.current = true;
+    });
+
     socket.on('error', (msg) => { alert(msg); });
+    
     return () => socket.removeAllListeners();
   }, [myName, isRef]);
 
@@ -73,7 +83,9 @@ function App() {
           <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '15px', borderRadius: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
             <div>
                 <div style={{fontSize: '0.8rem', color: 'gold'}}>PLAYER: {isRef ? "ERIC (REF)" : myName}</div>
-                <div style={{fontSize: '1rem', color: myUser?.role?.includes('team') ? 'lime' : 'white'}}>ROLE: {myUser?.role?.toUpperCase() || "SPECTATOR"}</div>
+                <div style={{fontSize: '1rem', color: myUser?.role?.includes('team') ? 'lime' : 'white'}}>
+                    ROLE: {myUser?.role?.toUpperCase() || "SPECTATOR"}
+                </div>
             </div>
             <div style={{textAlign: 'center'}}>
                 <a href={gameState.youtubeLink} target="_blank" rel="noopener noreferrer" style={{background: 'red', color: 'white', padding: '12px 25px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block'}}>▶️ WATCH LIVE NOW</a>
@@ -92,28 +104,33 @@ function App() {
           {isRef && (
             <div style={{ background: '#1a1a1a', border: '2px solid gold', padding: '15px', marginTop: '15px', borderRadius: '10px' }}>
               <h3 style={{color: 'gold', margin: '0 0 10px 0'}}>REFEREE CANVAS</h3>
-              <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="Link" style={{padding: '8px', width: '250px'}} />
-              <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{padding: '8px', background: 'gold'}}>SAVE LINK</button>
+              <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="YouTube Link" style={{padding: '8px', width: '250px'}} />
+              <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{padding: '8px', marginLeft: '5px', background: 'gold'}}>SAVE LINK</button>
               
-              <div style={{marginTop: '15px', padding: '10px', background: '#000'}}>
+              <div style={{marginTop: '15px', padding: '10px', background: '#000', border: '1px solid #333'}}>
                 <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5px'}}>
                    {localQRs.map((qr, i) => (
                      <input key={i} value={qr} onChange={(e) => { const updated = [...localQRs]; updated[i] = e.target.value; setLocalQRs(updated); }} style={{padding: '4px', fontSize: '0.7rem', background: '#222', color: 'white'}} />
                    ))}
                 </div>
-                <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{marginTop: '5px', background: 'green', color: 'white'}}>PUBLISH QRS</button>
+                <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{marginTop: '10px', background: 'green', color: 'white', padding: '5px 15px'}}>PUBLISH QRS</button>
               </div>
 
               <div style={{marginTop: '15px', background: '#222', padding: '10px'}}>
-                {gameState.allViewers.map(v => (
-                    <div key={v.id} style={{padding: '5px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between'}}>
-                        <span style={{color: v.role !== 'spectator' ? 'lime' : 'white'}}>{v.name}</span>
-                        <div>
-                            <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role: 'team1'})} style={{background: '#00ff00', marginRight: '5px'}}>T1</button>
-                            <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role: 'team2'})} style={{background: '#ff4d4d', color: 'white'}}>T2</button>
+                <p style={{fontWeight: 'bold', color: 'gold'}}>Assign Teams:</p>
+                <div style={{maxHeight: '150px', overflowY: 'auto'}}>
+                    {gameState.allViewers.map(v => (
+                        <div key={v.id} style={{padding: '8px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                            <span style={{color: v.role !== 'spectator' ? 'lime' : 'white'}}>
+                                {v.name} {v.role !== 'spectator' ? `(${v.role})` : ''}
+                            </span>
+                            <div>
+                                <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role: 'team1'})} style={{background: '#00ff00', marginRight: '5px'}}>T1</button>
+                                <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role: 'team2'})} style={{background: '#ff4d4d', color: 'white'}}>T2</button>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
               </div>
 
               <div style={{marginTop: '15px', display: 'flex', gap: '10px'}}>
@@ -127,28 +144,42 @@ function App() {
           {gameState.gameStarted && (
             <div style={{ marginTop: '20px' }}>
               <div style={{textAlign: 'center', padding: '10px', background: '#222', marginBottom: '10px', border: '1px solid gold'}}>
-                 <h2 style={{color: gameState.currentTurn === 'team1' ? '#00ff00' : '#ff4d4d', margin: 0}}>TURN: {gameState.currentTurn.toUpperCase()}</h2>
+                 <h2 style={{color: gameState.currentTurn === 'team1' ? '#00ff00' : '#ff4d4d', margin: 0}}>
+                    TURN: {gameState.currentTurn.toUpperCase()} 
+                    { (myUser?.role === gameState.currentTurn) ? " (YOUR TURN!)" : "" }
+                 </h2>
               </div>
               <div style={{ display: 'flex', gap: '20px' }}>
                 <div style={{ flex: 3 }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', maxHeight: '60vh', overflowY: 'auto' }}>
                     {gameState.availableCards.map(c => (
-                        <div key={c.id} onClick={() => socket.emit('playerPickCard', c.id)} style={{ border: '1px solid #444', padding: '10px', width: '90px', cursor: (myUser?.role === gameState.currentTurn) ? 'pointer' : 'not-allowed', opacity: (myUser?.role === gameState.currentTurn) ? 1 : 0.4, background: '#222' }}>
-                            <div style={{fontWeight: 'bold', fontSize: '0.8rem'}}>{c.name}</div>
-                            <div style={{color: 'gold', fontSize: '0.7rem'}}>{c.pos}</div>
-                            <div style={{color: '#00ff00', fontSize: '0.7rem'}}>{c.points} pts</div>
+                        <div key={c.id} 
+                             onClick={() => socket.emit('playerPickCard', c.id)} 
+                             style={{ 
+                                border: '1px solid #444', 
+                                padding: '10px', 
+                                width: '90px', 
+                                cursor: (myUser?.role === gameState.currentTurn) ? 'pointer' : 'not-allowed', 
+                                opacity: (myUser?.role === gameState.currentTurn) ? 1 : 0.4, 
+                                background: '#222' 
+                             }}>
+                        <div style={{fontWeight: 'bold', fontSize: '0.8rem'}}>{c.name}</div>
+                        <div style={{color: 'gold', fontSize: '0.7rem'}}>{c.pos}</div>
+                        <div style={{color: '#00ff00', fontSize: '0.7rem'}}>{c.points} pts</div>
                         </div>
                     ))}
                     </div>
                 </div>
                 <div style={{ flex: 1.5 }}>
-                    <div style={{ background: '#111', padding: '10px', border: '1px solid #333', marginBottom: '10px' }}>
-                        <h4 style={{color: '#00ff00', margin: 0}}>T1: {gameState.team1Player?.name || "???"} ({gameState.team1Picks.length}/11)</h4>
-                        {gameState.team1Picks.map((p, i) => <div key={i} style={{fontSize: '0.7rem'}}>• {p.name}</div>)}
+                    <div style={{ background: '#111', padding: '10px', border: gameState.currentTurn === 'team1' ? '2px solid #00ff00' : '1px solid #333', marginBottom: '10px' }}>
+                    <h4 style={{color: '#00ff00', margin: 0}}>T1: {gameState.team1Player?.name || "???"}</h4>
+                    <div style={{fontSize: '1.1rem', color: 'gold'}}>{calculatePoints(gameState.team1Picks)} pts ({gameState.team1Picks.length}/11)</div>
+                    {gameState.team1Picks.map((p, i) => <div key={i} style={{fontSize: '0.7rem'}}>• {p.name} ({p.pos})</div>)}
                     </div>
-                    <div style={{ background: '#111', padding: '10px', border: '1px solid #333' }}>
-                        <h4 style={{color: '#ff4d4d', margin: 0}}>T2: {gameState.team2Player?.name || "???"} ({gameState.team2Picks.length}/11)</h4>
-                        {gameState.team2Picks.map((p, i) => <div key={i} style={{fontSize: '0.7rem'}}>• {p.name}</div>)}
+                    <div style={{ background: '#111', padding: '10px', border: gameState.currentTurn === 'team2' ? '2px solid #ff4d4d' : '1px solid #333' }}>
+                    <h4 style={{color: '#ff4d4d', margin: 0}}>T2: {gameState.team2Player?.name || "???"}</h4>
+                    <div style={{fontSize: '1.1rem', color: 'gold'}}>{calculatePoints(gameState.team2Picks)} pts ({gameState.team2Picks.length}/11)</div>
+                    {gameState.team2Picks.map((p, i) => <div key={i} style={{fontSize: '0.7rem'}}>• {p.name} ({p.pos})</div>)}
                     </div>
                 </div>
               </div>
