@@ -12,6 +12,7 @@ function App() {
   const [isRef, setIsRef] = useState(false);
   const [newYoutube, setNewYoutube] = useState("");
   const [localQRs, setLocalQRs] = useState(["", "", "", "", "", ""]);
+  
   const hasAutoJoined = useRef(false);
 
   useEffect(() => {
@@ -58,18 +59,18 @@ function App() {
           
           <div style={{ background: '#111', padding: '20px', borderRadius: '15px', border: '1px solid #444', maxWidth: '90%', width: '600px', margin: '0 auto 20px auto', textAlign: 'left', fontSize: '0.85rem', maxHeight: '350px', overflowY: 'auto' }}>
             <h3 style={{ color: 'red', marginTop: 0, textAlign: 'center' }}>ITANGAZO RY’INGENZI (Warning Notice).</h3>
-            <p>KUGIRANGO TUTARENGA KUMATEGEKO AGENGA UBUYOBOZI N’AMATEGEKO BIGENGA ABANYARWANDA BOSE, CYANGWA N’ANDIMATEGEKO YOSE.</p>
+            <p>KUGIRANGO TUTARENGA KUMATEGEKO Y’UBUYOBOZI BW’URWANDA ,AMATEGEKO AGENGA ABANYARWANDA BOSE, CYANGWA N’ANDIMATEGEKO YOSE YABA AFITE AHO AHURIYE N’IMIKORESHEREZE Y’IKI GIKORESHO.</p>
             <p>Mbere yo kwinjira no gukora ubwishyu ubwo ari bwo bwose, ndagusaba gusoma no gusobanukirwa ibi bikurikira:</p>
-            <p>Iki gikoresho si urubuga rwo gutega cyangwa gukina urusimbi. Ni igikoresho cyo nyuzamo support ya RUHAGO N’INSHUTI kubantu bose biyumvamo gushyigikira imigabo n’imigambi bya RUHAGO N’INSHUTI Gusa. Gishobora gukoreshwa nk’igikoresho cy’imyidagaduro gishingiye ku bunararibonye, kigamije gusa gushimisha.(ariko ntwabwo gikoreshwa amasaha yose kandi si buri muntu wese watanze amafranga uhitwamo ngo akinire uruhande urwo arirwo rwose. Guhitamo abakinnyi ntibikorwa hakoreshejwe ikimenyane). </p>
+            <p>Iki gikoresho si urubuga rwo gutega cyangwa gukina urusimbi. Ni igikoresho cyo nyuzamo support ya RUHAGO kubantu bose biyumvamo gushyigikira imigabo n’imigambi bya RUHAGO N’INSHUTI Gusa. Gishobora gukoreshwa nk’igikoresho cy’imyidagaduro gishingiye ku bunararibonye, kigamije gusa gushimisha.(ariko ntwabwo gikoreshwa amasaha yose kandi si buri muntu wese watanze amafranga uhitwamo ngo akinire uruhande urwo arirwo rwose. Guhitamo abakinnyi ntibikorwa hakoreshejwe ikimenyane).</p>
             <p>Uyu mukino ukora gusa iyo ufite smart fone cyangwa ibindi bikoresho bifite ubushobozi bwayo cyangwa burenze hamwe na connection ya enternet. Ugenewe gusa abantu bafite imyaka 18 kuzamura. Gukomeza winjira, uba wemeye ko wujuje imyaka yavuzwe☝️.</p>
             <p>Amafaranga 300 Y’Urwanda gusa niyo yishyurwa.⚠️ ayishyuwe ntasubizwa inyuma mu bihe byose.</p>
             <p>Iyo wishyuye kugira ngo ubashe gukoresha uyu mukino, wemera ko udafite uburenganzira bwo gutegeka, kugenzura uburyo uyu mukino ukoreshwa. Twakira ibitekerezo n’inama mutanga, ariko ibyemezo byose bijyanye n’imikorere bifatwa natwe ubwacu.</p>
-            <p>Ntabwo dukusanya, tubika cyangwa dutunganya amakuru ayo ari yo yose azwi nk’amakuru bwite (personal data). Niba wemeza neza ko wasomye kandi wumvise neza ibisabwa ukaba ubyujuje, ishyura na momo pay (*182*8*1*1934816*300*PIN#).</p>
+            <p>Ntabwo dukusanya, tubika cyangwa dutunganya amakuru ayo ari yo yose azwi nk’amakuru bwite (personal data). Niba wemeza neza ko wasomye kandi wumvise neza ibisabwa ukaba ubyujuje, ishyura na momo pay (*182*8*1*1934816*300*PIN#). KWINJIRA: MURI BOX YA TDX-ID ANDIKAMO IMIBARE 11, WAHAWE MURI SMS YEMEZAKO WISHYUYE</p>
           </div>
 
           <div style={{ background: '#111', padding: '30px', borderRadius: '15px', border: '1px solid #333', display: 'inline-block' }}>
             <input value={myName} onChange={e => setMyName(e.target.value)} placeholder="Full Name" style={{padding:'10px', width:'200px'}} /><br/><br/>
-            <input value={myTxId} onChange={e => setMyTxId(e.target.value)} placeholder="TxID" style={{padding:'10px', width:'200px', border:'1px solid gold'}} /><br/><br/>
+            <input value={myTxId} onChange={e => setMyTxId(e.target.value)} placeholder="TDX-ID" style={{padding:'10px', width:'200px', border:'1px solid gold'}} /><br/><br/>
             <button onClick={handleJoin} style={{padding:'10px 20px', background:'#28a745', color:'white', fontWeight:'bold'}}>ENTER</button>
           </div>
           <div style={{marginTop:'50px', opacity:0.1}}>
@@ -106,7 +107,7 @@ function App() {
                 ))}
               </div>
               <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{background:'green', color:'white', width:'100%', marginTop:'5px'}}>SAVE QRS</button>
-              
+
               <div style={{maxHeight:'100px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px'}}>
                 {gameState.allViewers.map(v => (
                   <div key={v.id} style={{fontSize:'0.8rem', padding:'3px', borderBottom:'1px solid #222', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
@@ -118,7 +119,7 @@ function App() {
                   </div>
                 ))}
               </div>
-              
+
               <div style={{marginTop: '10px'}}>
                 <button onClick={() => socket.emit('refReset')} style={{background:'blue', color:'white'}}>RESET</button>
                 <button onClick={() => socket.emit('refStartDraft')} style={{background:'gold', marginLeft:'10px'}}>START</button>
@@ -141,13 +142,13 @@ function App() {
                   ))}
                 </div>
                 <div style={{ flex: 1.5, fontSize:'0.7rem' }}>
-                    <div style={{ background: '#111', padding: '5px', border: '1px solid #0f0', marginBottom: '8px' }}>
+                    <div style={{ background: '#111', padding: '5px', border: '1px solid #333', marginBottom: '8px' }}>
                         <b style={{color:'#0f0'}}>T1 ({gameState.team1Picks.length}/11)</b><br/>{calcPts(gameState.team1Picks)} pts
                         <div style={{marginTop:'5px', color:'#aaa'}}>
                             {gameState.team1Picks.map((p,i) => <div key={i}>• {p.name}</div>)}
                         </div>
                     </div>
-                    <div style={{ background: '#111', padding: '5px', border: '1px solid #f44' }}>
+                    <div style={{ background: '#111', padding: '5px', border: '1px solid #333' }}>
                         <b style={{color:'#f44'}}>T2 ({gameState.team2Picks.length}/11)</b><br/>{calcPts(gameState.team2Picks)} pts
                         <div style={{marginTop:'5px', color:'#aaa'}}>
                             {gameState.team2Picks.map((p,i) => <div key={i}>• {p.name}</div>)}
