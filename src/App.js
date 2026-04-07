@@ -57,20 +57,9 @@ function App() {
         <div style={{ textAlign: 'center', paddingTop: '20px', paddingBottom: '40px' }}>
           <h1 style={{color: 'gold'}}>🏟️ RUHAGO N'INSHUTI ARENA</h1>
           
-          <div style={{ 
-            background: '#111', 
-            padding: '20px', 
-            borderRadius: '15px', 
-            border: '1px solid #444', 
-            maxWidth: '90%', 
-            width: '600px',
-            margin: '0 auto 20px auto', 
-            textAlign: 'left', 
-            fontSize: '0.9rem', 
-            maxHeight: '400px', 
-            overflowY: 'auto' 
-          }}>
-            <h3 style={{color: 'red', marginTop: '0'}}>ITANGAZO RY’INGENZI (Warning Notice).</h3>
+          {/* WARNING NOTICE BOX */}
+          <div style={{ background: '#111', padding: '20px', borderRadius: '15px', border: '1px solid #444', maxWidth: '90%', width: '600px', margin: '0 auto 20px auto', textAlign: 'left', fontSize: '0.85rem', maxHeight: '350px', overflowY: 'auto' }}>
+            <h3 style={{ color: 'red', marginTop: 0, textAlign: 'center' }}>ITANGAZO RY’INGENZI (Warning Notice).</h3>
             <p>KUGIRANGO TUTARENGA KUMATEGEKO AGENGA UBUYOBOZI N’AMATEGEKO BIGENGA ABANYARWANDA BOSE, CYANGWA N’ANDIMATEGEKO YOSE.</p>
             <p>Mbere yo kwinjira no gukora ubwishyu ubwo ari bwo bwose, ndagusaba gusoma no gusobanukirwa ibi bikurikira:</p>
             <p>Iki gikoresho si urubuga rwo gutega cyangwa gukina urusimbi. Ni igikoresho cyo nyuzamo support ya RUHAGO N’INSHUTI kubantu bose biyumvamo gushyigikira imigabo n’imigambi bya RUHAGO N’INSHUTI Gusa. Gishobora gukoreshwa nk’igikoresho cy’imyidagaduro gishingiye ku bunararibonye, kigamije gusa gushimisha.(ariko ntwabwo gikoreshwa amasaha yose kandi si buri muntu wese watanze amafranga uhitwamo ngo akinire uruhande urwo arirwo rwose. Guhitamo abakinnyi ntibikorwa hakoreshejwe ikimenyane).</p>
@@ -92,6 +81,7 @@ function App() {
         </div>
       ) : (
         <div style={{ padding: '15px' }}>
+          {/* HEADER */}
           <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
             <div>
                 <div style={{fontSize: '0.7rem', color: 'gold'}}>PLAYER: {isRef ? "ERIC" : myName}</div>
@@ -101,16 +91,16 @@ function App() {
             <div style={{fontSize: '1rem', color: 'gold'}}>{gameState.allViewers.length} 👤</div>
           </div>
 
-          {isRef && (
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '10px', flexWrap: 'wrap' }}>
-              {gameState.qrCodes.map((url, i) => url && (
-                  <div key={i} style={{ background: 'white', padding: '2px', borderRadius: '4px' }}>
-                    <img src={url} alt="QR" style={{ width: '85px', height: '85px' }} />
-                  </div>
-              ))}
-            </div>
-          )}
+          {/* QRS - Restored logic to show for everyone */}
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '10px', flexWrap: 'wrap' }}>
+            {gameState.qrCodes.map((url, i) => url && (
+                <div key={i} style={{ background: 'white', padding: '2px', borderRadius: '4px' }}>
+                  <img src={url} alt="QR" style={{ width: '85px', height: '85px' }} />
+                </div>
+            ))}
+          </div>
 
+          {/* REF PANEL - Restored Assignments */}
           {isRef && (
             <div style={{ background: '#1a1a1a', border: '1px solid gold', padding: '10px', marginTop: '10px' }}>
               <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="Link" style={{width:'150px'}} />
@@ -121,6 +111,7 @@ function App() {
                 ))}
               </div>
               <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{background:'green', color:'white', width:'100%', marginTop:'5px'}}>SAVE QRS</button>
+              
               <div style={{maxHeight:'100px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px'}}>
                 {gameState.allViewers.map(v => (
                   <div key={v.id} style={{fontSize:'0.8rem', padding:'3px', borderBottom:'1px solid #222', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
@@ -132,6 +123,7 @@ function App() {
                   </div>
                 ))}
               </div>
+              
               <div style={{marginTop: '10px'}}>
                 <button onClick={() => socket.emit('refReset')} style={{background:'blue', color:'white'}}>RESET</button>
                 <button onClick={() => socket.emit('refStartDraft')} style={{background:'gold', marginLeft:'10px'}}>START</button>
@@ -140,6 +132,7 @@ function App() {
             </div>
           )}
 
+          {/* DRAFT BOARD - Restored Pick Lists */}
           {gameState.gameStarted && (
             <div style={{ marginTop: '15px' }}>
               <div style={{textAlign: 'center', padding: '5px', background: '#222', border: '1px solid gold'}}>
@@ -154,16 +147,14 @@ function App() {
                   ))}
                 </div>
                 <div style={{ flex: 1.5, fontSize:'0.7rem' }}>
-                    <div style={{ background: '#111', padding: '5px', border: '1px solid #0f0', marginBottom: '8px' }}>
-                        <b style={{color:'#0f0'}}>T1: {gameState.team1Player?.name || "?"}</b><br/>
-                        {calcPts(gameState.team1Picks)} pts ({gameState.team1Picks.length}/11)
+                    <div style={{ background: '#111', padding: '5px', border: '1px solid #333', marginBottom: '8px' }}>
+                        <b style={{color:'#0f0'}}>T1 ({gameState.team1Picks.length}/11)</b><br/>{calcPts(gameState.team1Picks)} pts
                         <div style={{marginTop:'5px', color:'#aaa'}}>
                             {gameState.team1Picks.map((p,i) => <div key={i}>• {p.name}</div>)}
                         </div>
                     </div>
-                    <div style={{ background: '#111', padding: '5px', border: '1px solid #f44' }}>
-                        <b style={{color:'#f44'}}>T2: {gameState.team2Player?.name || "?"}</b><br/>
-                        {calcPts(gameState.team2Picks)} pts ({gameState.team2Picks.length}/11)
+                    <div style={{ background: '#111', padding: '5px', border: '1px solid #333' }}>
+                        <b style={{color:'#f44'}}>T2 ({gameState.team2Picks.length}/11)</b><br/>{calcPts(gameState.team2Picks)} pts
                         <div style={{marginTop:'5px', color:'#aaa'}}>
                             {gameState.team2Picks.map((p,i) => <div key={i}>• {p.name}</div>)}
                         </div>
