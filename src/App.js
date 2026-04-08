@@ -70,25 +70,24 @@ function App() {
 
     return (
       <div style={{
-        background: '#1a472a', border: '3px solid white', borderRadius: '10px',
+        background: '#1a472a', border: '2px solid white', borderRadius: '8px',
         position: 'relative', display: 'flex', flexDirection: 'column',
         justifyContent: 'space-around', aspectRatio: '2/3', padding: '10px',
-        margin: '10px auto', maxWidth: '300px', boxShadow: '0 0 15px black'
+        margin: '10px auto', width: '220px', boxShadow: '0 0 10px black'
       }}>
         {rows.map((count, rIdx) => (
-          <div key={rIdx} style={{ display: 'flex', justifyContent: 'space-around', width: '100%', zIndex: 2 }}>
+          <div key={rIdx} style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
             {Array.from({ length: count }).map((_, i) => {
               const sIdx = slotCounter++;
               const p = tactics[sIdx];
               return (
                 <div key={i} onClick={() => canEdit && setActiveSlot(sIdx)}
                      style={{
-                        width: '40px', height: '40px', borderRadius: '50%',
-                        border: '2px solid gold', background: p ? '#111' : 'rgba(0,0,0,0.4)',
-                        color: 'white', fontSize: '0.5rem', display: 'flex',
+                        width: '35px', height: '35px', borderRadius: '50%',
+                        border: '1px solid gold', background: p ? '#111' : 'rgba(0,0,0,0.5)',
+                        color: 'white', fontSize: '0.45rem', display: 'flex',
                         alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-                        fontWeight: 'bold', overflow: 'hidden', padding: '2px',
-                        cursor: canEdit ? 'pointer' : 'default'
+                        fontWeight: 'bold', overflow: 'hidden', cursor: canEdit ? 'pointer' : 'default'
                      }}>
                   {p ? p.name : ""}
                 </div>
@@ -129,6 +128,7 @@ function App() {
         </div>
       ) : (
         <div style={{ padding: '15px' }}>
+          {/* HEADER */}
           <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
             <div>
                 <div style={{fontSize: '0.7rem', color: 'gold'}}>PLAYER: {isRef ? "ERIC" : myName}</div>
@@ -152,8 +152,8 @@ function App() {
               <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)}>LINK</button>
 
               <div style={{display:'flex', gap:'10px', marginTop: '10px', flexWrap: 'wrap', justifyContent: 'center'}}>
-                 <div style={{width:'140px'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 PITCH</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
-                 <div style={{width:'140px'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 PITCH</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
+                 <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 PITCH</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
+                 <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 PITCH</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
               </div>
 
               <div style={{maxHeight:'100px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px'}}>
@@ -175,6 +175,7 @@ function App() {
             </div>
           )}
 
+          {/* DRAFTING */}
           {gameState.gameStarted && (gameState[`${myUser?.role}Picks`]?.length < 11 || myUser?.role === 'spectator') && (
             <div style={{ marginTop: '15px' }}>
               <div style={{textAlign: 'center', padding: '5px', background: '#222', border: '1px solid gold'}}>
@@ -200,6 +201,7 @@ function App() {
             </div>
           )}
 
+          {/* TACTICAL */}
           {gameState.gameStarted && myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`].length === 11 && (
              <div style={{marginTop: '20px', textAlign: 'center'}}>
                 <h2 style={{color: 'gold'}}>TACTICS BOARD</h2>
@@ -232,4 +234,5 @@ function App() {
     </div>
   );
 }
+
 export default App;
