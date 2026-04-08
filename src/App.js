@@ -19,31 +19,34 @@ function App() {
   useEffect(() => {
     socket.on('gameStateUpdate', (state) => {
         setGameState(state);
-        // Persistence Fix: Keep the player "Joined" if their data is in the current server state
+        // PERSISTENCE FIX: Only auto-join if they are found in the viewer list
         const savedTx = localStorage.getItem('myTxId');
         const savedName = localStorage.getItem('draftName');
-        const userInState = state.allViewers.find(v => v.name === savedName && v.txId === savedTx);
+        const isStillInGame = state.allViewers.find(v => v.name === savedName && v.txId === savedTx);
         
-        if (userInState) {
+        if (isStillInGame) {
             setJoined(true);
             hasAutoJoined.current = true;
-        } else if (!isRef && hasAutoJoined.current) {
-            // Only drop if the server explicitly cleared the arena
+        } else if (!isRef) {
+            // If they aren't in the list and not a ref, they must be at the lobby
             setJoined(false);
             hasAutoJoined.current = false;
         }
-
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
     });
 
     socket.on('forceRefreshState', () => {
+        localStorage.removeItem('myTxId'); // Clear storage to prevent auto-joining old role
+        setJoined(false);
+        hasAutoJoined.current = false;
         if(!isRef) window.location.reload();
     });
 
     socket.on('clearArenaForce', () => {
         localStorage.removeItem('myTxId');
-        hasAutoJoined.current = false;
+        localStorage.removeItem('draftName');
         setJoined(false);
+        hasAutoJoined.current = false;
         if(!isRef) window.location.reload();
     });
 
@@ -88,16 +91,16 @@ function App() {
           <div key={rIdx} style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
             {Array.from({ length: count }).map((_, i) => {
               const sIdx = sc++;
-              const p = tactics[sIdx];
+              const player = tactics[sIdx];
               return (
                 <div key={i} onClick={() => canEdit && setActiveSlot(sIdx)}
                      style={{
                         width: '28px', height: '28px', borderRadius: '50%', border: '1px solid gold',
-                        background: p ? '#111' : 'rgba(0,0,0,0.5)', color: 'white',
+                        background: player ? '#111' : 'rgba(0,0,0,0.5)', color: 'white',
                         fontSize: '0.35rem', display: 'flex', alignItems: 'center',
                         justifyContent: 'center', textAlign: 'center', cursor: canEdit ? 'pointer' : 'default'
                      }}>
-                  {p ? p.name.split(' ')[0] : ""}
+                  {player ? player.name.split(' ')[0] : ""}
                 </div>
               );
             })}
@@ -152,7 +155,7 @@ function App() {
               </div>
               <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{background:'green', color:'white', width:'100%', padding:'5px', marginTop:'5px'}}>SAVE QRS</button>
 
-              <div style={{maxHeight:'100px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px'}}>
+              <div style={{maxHeight:'100px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px', border:'1px solid #333'}}>
                 {gameState.allViewers.map(v => (
                   <div key={v.id} style={{fontSize:'0.8rem', padding:'5px', borderBottom:'1px solid #222', display:'flex', justifyContent:'space-between'}}>
                     <span>{v.name}</span>
@@ -164,28 +167,28 @@ function App() {
                 ))}
               </div>
 
-              {gameState.gameStarted && (
-                <div style={{display:'flex', gap:'10px', justifyContent:'center', marginTop:'10px'}}>
-                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 Pitch</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
-                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 Pitch</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
+              {/* Ref Monitor - Only shows once drafting is FINISHED */}
+              {gameState.currentTurn === "FINISHED" && (
+                <div style={{display:'flex', gap:'10px', justifyContent:'center', marginTop:'15px'}}>
+                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 Tactics</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
+                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 Tactics</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
                 </div>
               )}
 
-              <div style={{marginTop: '15px', display: 'flex', flexDirection: 'column', gap:'10px'}}>
-                <div style={{display: 'flex', justifyContent: 'center', gap: '10px'}}>
+              <div style={{marginTop: '15px', display: 'flex', flexDirection:'column', gap:'10px'}}>
+                <div style={{display:'flex', justifyContent:'center', gap:'10px'}}>
                   <button onClick={() => socket.emit('refReset')} style={{background:'blue', color:'white', padding:'8px'}}>RESET</button>
                   <button onClick={() => socket.emit('refStartDraft')} style={{background:'gold', padding:'8px', fontWeight:'bold'}}>START</button>
                   <button onClick={() => socket.emit('refClearArena')} style={{background:'purple', color:'white', padding:'8px'}}>CLEAR</button>
                 </div>
-                {/* FINAL MATCH READY BUTTON */}
-                {Object.keys(gameState.team1Tactics).length === 11 && Object.keys(gameState.team2Tactics).length === 11 && (
-                    <button style={{background:'lime', color:'black', fontWeight:'black', padding:'15px', fontSize:'1.2rem', border:'3px solid gold'}}>🔥 START THE MATCH 🔥</button>
+                {gameState.currentTurn === "FINISHED" && (
+                    <button style={{background:'lime', color:'black', fontWeight:'bold', padding:'10px', border:'2px solid gold'}}>🚀 MATCH READY</button>
                 )}
               </div>
             </div>
           )}
 
-          {/* DRAFTING PHASE */}
+          {/* DRAFTING PHASE - NO PITCH HERE */}
           {gameState.gameStarted && (isRef || gameState[`${myUser?.role}Picks`]?.length < 11 || myUser?.role === 'spectator') && gameState.currentTurn !== "FINISHED" && (
             <div style={{marginTop:'15px'}}>
               <div style={{textAlign:'center', background:'#222', border:'1px solid gold', padding:'5px', marginBottom:'10px'}}><h3 style={{margin:0, color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44'}}>TURN: {gameState.currentTurn.toUpperCase()}</h3></div>
@@ -205,7 +208,7 @@ function App() {
             </div>
           )}
 
-          {/* TACTICAL PHASE */}
+          {/* TACTICAL PHASE - ONLY TRIGGERS WHEN 11 PICKED */}
           {gameState.gameStarted && myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`].length === 11 && (
              <div style={{marginTop:'20px', textAlign:'center'}}>
                 <h2 style={{color:'gold', margin:'0 0 10px 0'}}>TACTICS</h2>
