@@ -13,6 +13,8 @@ function App() {
   const [newYoutube, setNewYoutube] = useState("");
   const [localQRs, setLocalQRs] = useState(["", "", "", "", "", ""]);
   
+  // Tactical State
+  const [activeSlot, setActiveSlot] = useState(null);
   const hasAutoJoined = useRef(false);
 
   useEffect(() => {
@@ -50,6 +52,59 @@ function App() {
   if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Stadium Loading...</div>;
   const myUser = gameState.allViewers.find(v => v.id === socket.id);
   const calcPts = (t) => t.reduce((s, p) => s + (parseInt(p.points) || 0), 0);
+
+  // Pitch Layout Logic
+  const getFormationRows = (f) => {
+    if (f === "4-4-2") return [2, 4, 4, 1];
+    if (f === "4-3-3") return [3, 3, 4, 1];
+    if (f === "4-2-3-1") return [1, 3, 2, 4, 1];
+    if (f === "3-5-2") return [2, 5, 3, 1];
+    if (f === "5-4-1") return [1, 4, 5, 1];
+    return [2, 4, 4, 1];
+  };
+
+  const TacticalPitch = ({ teamKey, canEdit }) => {
+    const formation = gameState[`${teamKey}Formation`];
+    const tactics = gameState[`${teamKey}Tactics`];
+    const rows = getFormationRows(formation);
+    let slotCounter = 0;
+
+    return (
+      <div className="pitch-canvas" style={{
+        background: '#1a472a', border: '3px solid white', borderRadius: '10px',
+        position: 'relative', display: 'flex', flexDirection: 'column',
+        justifyContent: 'space-around', aspectRatio: '2/3', padding: '10px',
+        margin: '10px auto', maxWidth: '300px', boxShadow: '0 0 15px black'
+      }}>
+        {rows.map((count, rIdx) => (
+          <div key={rIdx} style={{ display: 'flex', justifyContent: 'space-around', width: '100%', zIndex: 2 }}>
+            {Array.from({ length: count }).map((_, i) => {
+              const sIdx = slotCounter++;
+              const p = tactics[sIdx];
+              return (
+                <div key={i} onClick={() => canEdit && setActiveSlot(sIdx)}
+                     style={{
+                        width: '45px', height: '45px', borderRadius: '50%',
+                        border: '2px solid gold', background: p ? '#111' : 'rgba(0,0,0,0.4)',
+                        color: 'white', fontSize: '0.55rem', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+                        fontWeight: 'bold', overflow: 'hidden', padding: '2px'
+                     }}>
+                  {p ? p.name : ""}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media (min-width: 800px) {
+            .pitch-canvas { transform: rotate(-90deg); aspect-ratio: 3/2; }
+            .pitch-canvas div { transform: rotate(90deg); }
+          }
+        `}} />
+      </div>
+    );
+  };
 
   return (
     <div style={{ backgroundColor: '#050505', color: '#eee', minHeight: '100vh', fontFamily: 'Arial' }}>
@@ -101,12 +156,11 @@ function App() {
             <div style={{ background: '#1a1a1a', border: '1px solid gold', padding: '10px', marginTop: '10px' }}>
               <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="Link" style={{width:'150px'}} />
               <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)}>LINK</button>
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'5px', marginTop:'10px'}}>
-                {localQRs.map((q, i) => (
-                  <input key={i} value={q} onChange={e => {let n=[...localQRs]; n[i]=e.target.value; setLocalQRs(n)}} style={{fontSize:'0.6rem'}} />
-                ))}
+
+              <div style={{display:'flex', gap:'10px', marginTop: '10px'}}>
+                 <div style={{flex:1}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 PITCH</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
+                 <div style={{flex:1}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 PITCH</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
               </div>
-              <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{background:'green', color:'white', width:'100%', marginTop:'5px'}}>SAVE QRS</button>
 
               <div style={{maxHeight:'100px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px'}}>
                 {gameState.allViewers.map(v => (
@@ -119,7 +173,6 @@ function App() {
                   </div>
                 ))}
               </div>
-
               <div style={{marginTop: '10px'}}>
                 <button onClick={() => socket.emit('refReset')} style={{background:'blue', color:'white'}}>RESET</button>
                 <button onClick={() => socket.emit('refStartDraft')} style={{background:'gold', marginLeft:'10px'}}>START</button>
@@ -128,7 +181,8 @@ function App() {
             </div>
           )}
 
-          {gameState.gameStarted && (
+          {/* DRAFT PHASE */}
+          {gameState.gameStarted && (gameState[`${myUser?.role}Picks`]?.length < 11 || myUser?.role === 'spectator') && (
             <div style={{ marginTop: '15px' }}>
               <div style={{textAlign: 'center', padding: '5px', background: '#222', border: '1px solid gold'}}>
                  <h3 style={{color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44', margin: 0}}>TURN: {gameState.currentTurn.toUpperCase()}</h3>
@@ -144,19 +198,42 @@ function App() {
                 <div style={{ flex: 1.5, fontSize:'0.7rem' }}>
                     <div style={{ background: '#111', padding: '5px', border: '1px solid #333', marginBottom: '8px' }}>
                         <b style={{color:'#0f0'}}>T1 ({gameState.team1Picks.length}/11)</b><br/>{calcPts(gameState.team1Picks)} pts
-                        <div style={{marginTop:'5px', color:'#aaa'}}>
-                            {gameState.team1Picks.map((p,i) => <div key={i}>• {p.name}</div>)}
-                        </div>
                     </div>
                     <div style={{ background: '#111', padding: '5px', border: '1px solid #333' }}>
                         <b style={{color:'#f44'}}>T2 ({gameState.team2Picks.length}/11)</b><br/>{calcPts(gameState.team2Picks)} pts
-                        <div style={{marginTop:'5px', color:'#aaa'}}>
-                            {gameState.team2Picks.map((p,i) => <div key={i}>• {p.name}</div>)}
-                        </div>
                     </div>
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TACTICAL PHASE */}
+          {gameState.gameStarted && myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`].length === 11 && (
+             <div style={{marginTop: '20px', textAlign: 'center'}}>
+                <h2 style={{color: 'gold'}}>TACTICS BOARD</h2>
+                <select onChange={(e) => socket.emit('playerSetFormation', e.target.value)} style={{padding:'8px', background:'#222', color:'gold', border:'1px solid gold', marginBottom:'10px'}}>
+                   <option value="4-4-2">4-4-2</option>
+                   <option value="4-3-3">4-3-3</option>
+                   <option value="4-2-3-1">4-2-3-1</option>
+                   <option value="3-5-2">3-5-2</option>
+                   <option value="5-4-1">5-4-1</option>
+                </select>
+                <TacticalPitch teamKey={myUser.role} canEdit={true} />
+                {activeSlot !== null && (
+                   <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', zIndex: 1000, padding: '20px', overflowY:'auto' }}>
+                      <h3 style={{color: 'gold'}}>Assign Player</h3>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+                         {gameState[`${myUser.role}Picks`].map(p => (
+                            <button key={p.id} onClick={() => { socket.emit('playerSetPosition', { slotIndex: activeSlot, cardId: p.id }); setActiveSlot(null); }}
+                                    style={{ padding: '12px', background: '#222', color: 'white', border: '1px solid gold', borderRadius:'5px' }}>
+                               {p.name} ({p.pos})
+                            </button>
+                         ))}
+                      </div>
+                      <button onClick={() => setActiveSlot(null)} style={{marginTop: '25px', padding: '10px 40px', background: 'red', color: 'white', border: 'none', borderRadius:'5px'}}>CANCEL</button>
+                   </div>
+                )}
+             </div>
           )}
         </div>
       )}
