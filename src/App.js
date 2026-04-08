@@ -6,7 +6,7 @@ const socket = io('https://football-backend-ykso.onrender.com');
 function App() {
   const [gameState, setGameState] = useState(null);
   const [myName, setMyName] = useState(localStorage.getItem('draftName') || "");
-  const [myTxId, setMyTxId] = useState("");
+  const [myTxId, setMyTxId] = useState(localStorage.getItem('myTxId') || "");
   const [joined, setJoined] = useState(false);
   const [refToken, setRefToken] = useState("");
   const [isRef, setIsRef] = useState(false);
@@ -18,20 +18,22 @@ function App() {
   useEffect(() => {
     socket.on('gameStateUpdate', (state) => {
         setGameState(state);
-        // PERSISTENCE: Re-join based on localStorage
-        if (!hasAutoJoined.current && !isRef) {
-            const sTx = localStorage.getItem('myTxId');
-            const sName = localStorage.getItem('draftName');
-            if (state.allViewers.find(v => v.name === sName && v.txId === sTx)) {
-                setJoined(true);
-                hasAutoJoined.current = true;
-            }
+        const sTx = localStorage.getItem('myTxId');
+        const sName = localStorage.getItem('draftName');
+        const userInGame = state.allViewers.find(v => v.txId === sTx && v.name === sName);
+        
+        if (userInGame) {
+            setJoined(true);
+            hasAutoJoined.current = true;
+        } else if (!isRef && hasAutoJoined.current) {
+            setJoined(false);
+            hasAutoJoined.current = false;
         }
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
     });
 
-    socket.on('softReset', () => {
-        if(!isRef) setJoined(true); 
+    socket.on('forceResetUI', () => {
+        if(!isRef) setJoined(true);
     });
 
     socket.on('clearArenaForce', () => {
@@ -54,7 +56,7 @@ function App() {
     socket.emit('joinWaitingRoom', { name: myName, ticketCode: myTxId });
   };
 
-  if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Arena Loading...</div>;
+  if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Arena Connecting...</div>;
   const myUser = gameState.allViewers.find(v => v.id === socket.id);
   const calcPts = (t) => t ? t.reduce((s, p) => s + (parseInt(p.points) || 0), 0) : 0;
 
@@ -88,7 +90,7 @@ function App() {
                 <div key={i} onClick={() => canEdit && !gameState.matchLocked && setActiveSlot(sIdx)}
                      style={{
                         width: '28px', height: '28px', borderRadius: '50%', border: '1px solid gold',
-                        background: p ? '#111' : 'rgba(0,0,0,0.4)', color: 'white',
+                        background: p ? '#111' : 'rgba(0,0,0,0.5)', color: 'white',
                         fontSize: '0.35rem', display: 'flex', alignItems: 'center',
                         justifyContent: 'center', textAlign: 'center', cursor: (canEdit && !gameState.matchLocked) ? 'pointer' : 'default'
                      }}>
@@ -142,7 +144,7 @@ function App() {
               </div>
               <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'5px'}}>
                 {localQRs.map((q, i) => (
-                  <input key={i} value={q} onChange={e => {let n=[...localQRs]; n[i]=e.target.value; setLocalQRs(n)}} placeholder="QR URL" style={{fontSize:'0.6rem'}} />
+                  <input key={i} value={q} onChange={e => {let n=[...localQRs]; n[i]=e.target.value; setLocalQRs(n)}} placeholder="QR URL" style={{fontSize:'0.6rem', background: '#222', color: 'gold'}} />
                 ))}
               </div>
               <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{background:'green', color:'white', width:'100%', padding:'5px', marginTop:'5px'}}>SAVE QRS</button>
@@ -159,11 +161,10 @@ function App() {
                 ))}
               </div>
 
-              {/* Ref Monitor - Only shows once drafting is FINISHED */}
-              {gameState.currentTurn === "FINISHED" && (
+              {gameState.gameStarted && (
                 <div style={{display:'flex', gap:'10px', justifyContent:'center', marginTop:'15px'}}>
-                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 Tactics</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
-                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 Tactics</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
+                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 Pitch</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
+                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 Pitch</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
                 </div>
               )}
 
@@ -180,8 +181,8 @@ function App() {
             </div>
           )}
 
-          {/* DRAFTING PHASE */}
-          {gameState.gameStarted && (isRef || gameState[`${myUser?.role}Picks`]?.length < 11 || myUser?.role === 'spectator') && gameState.currentTurn !== "FINISHED" && (
+          {/* PHASE 3: DRAFTING - Pitch is hidden here */}
+          {gameState.gameStarted && (isRef || (myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`]?.length < 11) || myUser?.role === 'spectator') && gameState.currentTurn !== "FINISHED" && (
             <div style={{marginTop:'15px'}}>
               <div style={{textAlign:'center', background:'#222', border:'1px solid gold', padding:'5px', marginBottom:'10px'}}><h3 style={{margin:0, color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44'}}>TURN: {gameState.currentTurn.toUpperCase()}</h3></div>
               <div style={{display:'flex', gap:'10px'}}>
@@ -200,10 +201,13 @@ function App() {
             </div>
           )}
 
-          {/* TACTICAL PHASE */}
+          {/* PHASE 4: TACTICS - Appears only when 11 picked */}
           {gameState.gameStarted && myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`].length === 11 && (
              <div style={{marginTop:'20px', textAlign:'center'}}>
                 <h2 style={{color:'gold', margin:'0 0 10px 0'}}>TACTICS {gameState.matchLocked && "(LOCKED)"}</h2>
+                <select onChange={(e) => socket.emit('playerSetFormation', e.target.value)} style={{padding:'10px', background:'#222', color:'gold', border:'1px solid gold', marginBottom:'10px'}}>
+                   <option value="4-4-2">4-4-2</option><option value="4-3-3">4-3-3</option><option value="4-2-3-1">4-2-3-1</option><option value="3-5-2">3-5-2</option><option value="5-4-1">5-4-1</option>
+                </select>
                 <TacticalPitch teamKey={myUser.role} canEdit={!gameState.matchLocked} />
                 {activeSlot !== null && !gameState.matchLocked && (
                    <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.95)', zIndex:1000, padding:'20px', overflowY:'auto'}}>
