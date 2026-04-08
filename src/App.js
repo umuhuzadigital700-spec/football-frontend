@@ -11,7 +11,6 @@ function App() {
   const [refToken, setRefToken] = useState("");
   const [isRef, setIsRef] = useState(false);
   const [newYoutube, setNewYoutube] = useState("");
-  const [localQRs, setLocalQRs] = useState(["", "", "", "", "", ""]);
   
   // Tactical State
   const [activeSlot, setActiveSlot] = useState(null);
@@ -27,7 +26,6 @@ function App() {
                 hasAutoJoined.current = true;
             }
         }
-        if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
     });
 
     socket.on('clearArenaForce', () => {
@@ -51,7 +49,11 @@ function App() {
 
   if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Stadium Loading...</div>;
   const myUser = gameState.allViewers.find(v => v.id === socket.id);
-  const calcPts = (t) => t.reduce((s, p) => s + (parseInt(p.points) || 0), 0);
+  
+  const calcPts = (t) => {
+    if (!t) return 0;
+    return t.reduce((s, p) => s + (parseInt(p.points) || 0), 0);
+  };
 
   const getFormationRows = (f) => {
     if (f === "4-4-2") return [2, 4, 4, 1];
@@ -109,7 +111,7 @@ function App() {
             <h3 style={{ color: 'red', marginTop: 0, textAlign: 'center' }}>ITANGAZO RY’INGENZI (Warning Notice).</h3>
             <p>KUGIRANGO TUTARENGA KUMATEGEKO Y’UBUYOBOZI BW’URWANDA ,AMATEGEKO AGENGA ABANYARWANDA BOSE, CYANGWA N’ANDIMATEGEKO YOSE YABA AFITE AHO AHURIYE N’IMIKORESHEREZE Y’IKI GIKORESHO.</p>
             <p>Mbere yo kwinjira no gukora ubwishyu ubwo ari bwo bwose, ndagusaba gusoma no gusobanukirwa ibi bikurikira:</p>
-            <p>Iki gikoresho si urubuga rwo gutega cyangwa gukina urusimbi. Ni igikoresho cyo nyuzamo support ya RUHAGO kubantu bose biyumvamo gushyigikira imigabo n’imigambi bya RUHAGO N’INSHUTI Gusa. Gishobora gukoreshwa nk’igikoresho cy’imyidagaduro gishingiye ku bunararibonye, kigamije gusa gushimisha.(ariko ntwabwo gikoreshwa amasaha yose kandi si buri muntu wese watanze amafranga uhitwamo ngo akinire uruhande urwo arirwo rwose. Guhitamo abakinnyi ntibikorwa hakoreshejwe ikimenyane).</p>
+            <p>Iki gikoresho si urubuga rwo gutega cyangwa gukina urusimbi. Ni igikoresho cyo nyuzamo support ya RUHAGO kubantu bose biyumvamo gushyigikira imigabo n’imigambi bya RUHAGO N’INSHUTI Gusa. Gishobora gukoreshwa nk’igikoresho cy’imyidagaduro gishingiye ku bunararibonye, kigamije gusa gushimisha.(ariko ntwabwo gikoreshwa amasaha yose kandi si buri muntu wese watanze amafranga uhitwamo ngo akinire uruhande urwo arirwo rwose. Guhitamo abakinnyi ntibikorwa hakoreshejwe ikimenyane). </p>
             <p>Uyu mukino ukora gusa iyo ufite smart fone cyangwa ibindi bikoresho bifite ubushobozi bwayo cyangwa burenze hamwe na connection ya enternet. Ugenewe gusa abantu bafite imyaka 18 kuzamura. Gukomeza winjira, uba wemeye ko wujuje imyaka yavuzwe☝️.</p>
             <p>Amafaranga 300 Y’Urwanda gusa niyo yishyurwa.⚠️ ayishyuwe ntasubizwa inyuma mu bihe byose.</p>
             <p>Iyo wishyuye kugira ngo ubashe gukoresha uyu mukino, wemera ko udafite uburenganzira bwo gutegeka, kugenzura uburyo uyu mukino ukoreshwa. Twakira ibitekerezo n’inama mutanga, ariko ibyemezo byose bijyanye n’imikorere bifatwa natwe ubwacu.</p>
@@ -128,7 +130,6 @@ function App() {
         </div>
       ) : (
         <div style={{ padding: '15px' }}>
-          {/* HEADER */}
           <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
             <div>
                 <div style={{fontSize: '0.7rem', color: 'gold'}}>PLAYER: {isRef ? "ERIC" : myName}</div>
@@ -175,7 +176,6 @@ function App() {
             </div>
           )}
 
-          {/* DRAFTING */}
           {gameState.gameStarted && (gameState[`${myUser?.role}Picks`]?.length < 11 || myUser?.role === 'spectator') && (
             <div style={{ marginTop: '15px' }}>
               <div style={{textAlign: 'center', padding: '5px', background: '#222', border: '1px solid gold'}}>
@@ -201,7 +201,6 @@ function App() {
             </div>
           )}
 
-          {/* TACTICAL */}
           {gameState.gameStarted && myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`].length === 11 && (
              <div style={{marginTop: '20px', textAlign: 'center'}}>
                 <h2 style={{color: 'gold'}}>TACTICS BOARD</h2>
