@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 
 const socket = io('https://football-backend-ykso.onrender.com');
 
 function App() {
   const [gameState, setGameState] = useState(null);
-  const [myName, setMyName] = useState("");
+  const [myName, setMyName] = useState(localStorage.getItem('draftName') || "");
   const [myTxId, setMyTxId] = useState("");
   const [joined, setJoined] = useState(false);
   const [refToken, setRefToken] = useState("");
@@ -13,41 +13,49 @@ function App() {
   const [newYoutube, setNewYoutube] = useState("");
   const [localQRs, setLocalQRs] = useState(["", "", "", "", "", ""]);
   const [activeSlot, setActiveSlot] = useState(null);
+  const hasAutoJoined = useRef(false);
 
   useEffect(() => {
     socket.on('gameStateUpdate', (state) => {
         setGameState(state);
+        // PERSISTENCE: Re-join based on localStorage
+        if (!hasAutoJoined.current && !isRef) {
+            const sTx = localStorage.getItem('myTxId');
+            const sName = localStorage.getItem('draftName');
+            if (state.allViewers.find(v => v.name === sName && v.txId === sTx)) {
+                setJoined(true);
+                hasAutoJoined.current = true;
+            }
+        }
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
     });
 
+    socket.on('softReset', () => {
+        if(!isRef) setJoined(true); 
+    });
+
     socket.on('clearArenaForce', () => {
+        localStorage.removeItem('myTxId');
+        localStorage.removeItem('draftName');
         setJoined(false);
-        setIsRef(false);
-        setMyName("");
-        setMyTxId("");
-        window.location.reload();
+        hasAutoJoined.current = false;
+        if(!isRef) window.location.reload();
     });
 
-    socket.on('refConfirm', (val) => { 
-        setIsRef(val); 
-        setJoined(true); 
-    });
-
+    socket.on('refConfirm', (val) => { setIsRef(val); setJoined(true); hasAutoJoined.current = true; });
     socket.on('error', (m) => alert(m));
-
     return () => socket.removeAllListeners();
   }, [isRef]);
 
   const handleJoin = () => {
     if (!myName || !myTxId) return alert("Missing Info");
+    localStorage.setItem('draftName', myName);
+    localStorage.setItem('myTxId', myTxId);
     socket.emit('joinWaitingRoom', { name: myName, ticketCode: myTxId });
-    // Note: 'joined' becomes true only after state update from server
   };
 
-  if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Arena Connecting...</div>;
-  
+  if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Arena Loading...</div>;
   const myUser = gameState.allViewers.find(v => v.id === socket.id);
-  const isAuthorized = !!myUser || isRef;
   const calcPts = (t) => t ? t.reduce((s, p) => s + (parseInt(p.points) || 0), 0) : 0;
 
   const getRows = (f) => {
@@ -96,7 +104,7 @@ function App() {
 
   return (
     <div style={{ backgroundColor: '#050505', color: '#eee', minHeight: '100vh', fontFamily: 'Arial' }}>
-      {!joined || !isAuthorized ? (
+      {!joined ? (
         <div style={{ textAlign: 'center', paddingTop: '20px' }}>
           <h1 style={{color: 'gold'}}>🏟️ RUHAGO N'INSHUTI ARENA</h1>
           <div style={{ background: '#111', padding: '20px', borderRadius: '15px', border: '1px solid #444', maxWidth: '90%', width: '600px', margin: '0 auto 20px auto', textAlign: 'left', fontSize: '0.85rem', maxHeight: '350px', overflowY: 'auto' }}>
@@ -112,7 +120,6 @@ function App() {
         </div>
       ) : (
         <div style={{ padding: '15px' }}>
-          {/* HEADER SECTION */}
           <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
             <div><div style={{fontSize: '0.7rem', color: 'gold'}}>PLAYER: {isRef ? "ERIC (REF)" : myName}</div><div style={{fontSize: '0.9rem'}}>ROLE: {isRef ? "REFEREE" : (myUser?.role?.toUpperCase() || "FAN")}</div></div>
             <a href={gameState.youtubeLink} target="_blank" rel="noreferrer" style={{background: 'red', color: 'white', padding: '10px 15px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold'}}>WATCH LIVE</a>
@@ -127,7 +134,6 @@ function App() {
             ))}
           </div>
 
-          {/* REFEREE PANEL */}
           {isRef && (
             <div style={{ background: '#1a1a1a', border: '1px solid gold', padding: '15px', marginTop: '10px', borderRadius: '8px' }}>
               <div style={{marginBottom: '10px'}}>
@@ -153,10 +159,11 @@ function App() {
                 ))}
               </div>
 
+              {/* Ref Monitor - Only shows once drafting is FINISHED */}
               {gameState.currentTurn === "FINISHED" && (
                 <div style={{display:'flex', gap:'10px', justifyContent:'center', marginTop:'15px'}}>
-                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 Pitch</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
-                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 Pitch</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
+                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 Tactics</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
+                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 Tactics</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
                 </div>
               )}
 
@@ -173,7 +180,7 @@ function App() {
             </div>
           )}
 
-          {/* DRAFTING PHASE - NO PITCH HERE */}
+          {/* DRAFTING PHASE */}
           {gameState.gameStarted && (isRef || gameState[`${myUser?.role}Picks`]?.length < 11 || myUser?.role === 'spectator') && gameState.currentTurn !== "FINISHED" && (
             <div style={{marginTop:'15px'}}>
               <div style={{textAlign:'center', background:'#222', border:'1px solid gold', padding:'5px', marginBottom:'10px'}}><h3 style={{margin:0, color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44'}}>TURN: {gameState.currentTurn.toUpperCase()}</h3></div>
@@ -193,7 +200,7 @@ function App() {
             </div>
           )}
 
-          {/* TACTICAL PHASE - ONLY AFTER 11 PICKED */}
+          {/* TACTICAL PHASE */}
           {gameState.gameStarted && myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`].length === 11 && (
              <div style={{marginTop:'20px', textAlign:'center'}}>
                 <h2 style={{color:'gold', margin:'0 0 10px 0'}}>TACTICS {gameState.matchLocked && "(LOCKED)"}</h2>
@@ -201,10 +208,7 @@ function App() {
                 {activeSlot !== null && !gameState.matchLocked && (
                    <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.95)', zIndex:1000, padding:'20px', overflowY:'auto'}}>
                       <h3 style={{color:'gold'}}>Assign Player</h3>
-                      <div style={{display:'flex', flexWrap:'wrap', gap:'8px', justifyContent:'center'}}>{gameState[`${myUser.role}Picks`].map(p => (
-                        <button key={p.id} onClick={() => { socket.emit('playerSetPosition', {slotIndex:activeSlot, cardId:p.id}); setActiveSlot(null); }}
-                                style={{padding:'12px', background:'#222', color:'white', border:'1px solid gold'}}>{p.name}</button>
-                      ))}</div>
+                      <div style={{display:'flex', flexWrap:'wrap', gap:'8px', justifyContent:'center'}}>{gameState[`${myUser.role}Picks`].map(p => <button key={p.id} onClick={() => {socket.emit('playerSetPosition', {slotIndex:activeSlot, cardId:p.id}); setActiveSlot(null);}} style={{padding:'12px', background:'#222', color:'white', border:'1px solid gold'}}>{p.name}</button>)}</div>
                       <button onClick={() => setActiveSlot(null)} style={{marginTop:'25px', padding:'10px 40px', background:'red', color:'white', border:'none'}}>CANCEL</button>
                    </div>
                 )}
@@ -215,5 +219,4 @@ function App() {
     </div>
   );
 }
-
 export default App;
