@@ -53,7 +53,6 @@ function App() {
   const myUser = gameState.allViewers.find(v => v.id === socket.id);
   const calcPts = (t) => t.reduce((s, p) => s + (parseInt(p.points) || 0), 0);
 
-  // Pitch Layout Logic
   const getFormationRows = (f) => {
     if (f === "4-4-2") return [2, 4, 4, 1];
     if (f === "4-3-3") return [3, 3, 4, 1];
@@ -64,13 +63,13 @@ function App() {
   };
 
   const TacticalPitch = ({ teamKey, canEdit }) => {
-    const formation = gameState[`${teamKey}Formation`];
-    const tactics = gameState[`${teamKey}Tactics`];
+    const formation = gameState[`${teamKey}Formation`] || "4-4-2";
+    const tactics = gameState[`${teamKey}Tactics`] || {};
     const rows = getFormationRows(formation);
     let slotCounter = 0;
 
     return (
-      <div className="pitch-canvas" style={{
+      <div style={{
         background: '#1a472a', border: '3px solid white', borderRadius: '10px',
         position: 'relative', display: 'flex', flexDirection: 'column',
         justifyContent: 'space-around', aspectRatio: '2/3', padding: '10px',
@@ -84,11 +83,12 @@ function App() {
               return (
                 <div key={i} onClick={() => canEdit && setActiveSlot(sIdx)}
                      style={{
-                        width: '45px', height: '45px', borderRadius: '50%',
+                        width: '40px', height: '40px', borderRadius: '50%',
                         border: '2px solid gold', background: p ? '#111' : 'rgba(0,0,0,0.4)',
-                        color: 'white', fontSize: '0.55rem', display: 'flex',
+                        color: 'white', fontSize: '0.5rem', display: 'flex',
                         alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-                        fontWeight: 'bold', overflow: 'hidden', padding: '2px'
+                        fontWeight: 'bold', overflow: 'hidden', padding: '2px',
+                        cursor: canEdit ? 'pointer' : 'default'
                      }}>
                   {p ? p.name : ""}
                 </div>
@@ -96,12 +96,6 @@ function App() {
             })}
           </div>
         ))}
-        <style dangerouslySetInnerHTML={{ __html: `
-          @media (min-width: 800px) {
-            .pitch-canvas { transform: rotate(-90deg); aspect-ratio: 3/2; }
-            .pitch-canvas div { transform: rotate(90deg); }
-          }
-        `}} />
       </div>
     );
   };
@@ -157,9 +151,9 @@ function App() {
               <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="Link" style={{width:'150px'}} />
               <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)}>LINK</button>
 
-              <div style={{display:'flex', gap:'10px', marginTop: '10px'}}>
-                 <div style={{flex:1}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 PITCH</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
-                 <div style={{flex:1}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 PITCH</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
+              <div style={{display:'flex', gap:'10px', marginTop: '10px', flexWrap: 'wrap', justifyContent: 'center'}}>
+                 <div style={{width:'140px'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 PITCH</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
+                 <div style={{width:'140px'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 PITCH</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
               </div>
 
               <div style={{maxHeight:'100px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px'}}>
@@ -181,7 +175,6 @@ function App() {
             </div>
           )}
 
-          {/* DRAFT PHASE */}
           {gameState.gameStarted && (gameState[`${myUser?.role}Picks`]?.length < 11 || myUser?.role === 'spectator') && (
             <div style={{ marginTop: '15px' }}>
               <div style={{textAlign: 'center', padding: '5px', background: '#222', border: '1px solid gold'}}>
@@ -207,7 +200,6 @@ function App() {
             </div>
           )}
 
-          {/* TACTICAL PHASE */}
           {gameState.gameStarted && myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`].length === 11 && (
              <div style={{marginTop: '20px', textAlign: 'center'}}>
                 <h2 style={{color: 'gold'}}>TACTICS BOARD</h2>
