@@ -19,15 +19,20 @@ function App() {
   useEffect(() => {
     socket.on('gameStateUpdate', (state) => {
         setGameState(state);
-        // Persistence logic: Automatically re-join if name/txId exist in state
-        if (!hasAutoJoined.current && !isRef) {
-            const savedTx = localStorage.getItem('myTxId');
-            const savedName = localStorage.getItem('draftName');
-            if (state.allViewers.find(v => v.name === savedName && v.txId === savedTx)) {
-                setJoined(true);
-                hasAutoJoined.current = true;
-            }
+        // Persistence Fix: Keep the player "Joined" if their data is in the current server state
+        const savedTx = localStorage.getItem('myTxId');
+        const savedName = localStorage.getItem('draftName');
+        const userInState = state.allViewers.find(v => v.name === savedName && v.txId === savedTx);
+        
+        if (userInState) {
+            setJoined(true);
+            hasAutoJoined.current = true;
+        } else if (!isRef && hasAutoJoined.current) {
+            // Only drop if the server explicitly cleared the arena
+            setJoined(false);
+            hasAutoJoined.current = false;
         }
+
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
     });
 
@@ -68,12 +73,11 @@ function App() {
     return [2, 4, 4, 1];
   };
 
-  // Unified Pitch: Vertical for all devices
   const TacticalPitch = ({ teamKey, canEdit }) => {
     const formation = gameState[`${teamKey}Formation`] || "4-4-2";
     const tactics = gameState[`${teamKey}Tactics`] || {};
     const rows = getRows(formation);
-    let slotCount = 0;
+    let sc = 0;
     return (
       <div style={{
         background: '#1a472a', border: '2px solid white', borderRadius: '8px',
@@ -83,7 +87,7 @@ function App() {
         {rows.map((count, rIdx) => (
           <div key={rIdx} style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
             {Array.from({ length: count }).map((_, i) => {
-              const sIdx = slotCount++;
+              const sIdx = sc++;
               const p = tactics[sIdx];
               return (
                 <div key={i} onClick={() => canEdit && setActiveSlot(sIdx)}
@@ -117,10 +121,7 @@ function App() {
             <input value={myTxId} onChange={e => setMyTxId(e.target.value)} placeholder="TDX-ID" style={{padding:'10px', width:'200px', border:'1px solid gold'}} /><br/><br/>
             <button onClick={handleJoin} style={{padding:'10px 20px', background:'#28a745', color:'white', fontWeight:'bold'}}>ENTER</button>
           </div>
-          <div style={{marginTop:'50px', opacity:0.1}}>
-            <input type="password" onChange={e => setRefToken(e.target.value)} style={{width:'80px'}}/>
-            <button onClick={() => socket.emit('claimReferee', refToken)}>REF</button>
-          </div>
+          <div style={{marginTop:'50px', opacity:0.1}}><input type="password" onChange={e => setRefToken(e.target.value)} style={{width:'80px'}}/><button onClick={() => socket.emit('claimReferee', refToken)}>REF</button></div>
         </div>
       ) : (
         <div style={{ padding: '15px' }}>
@@ -163,23 +164,28 @@ function App() {
                 ))}
               </div>
 
-              {/* Ref Tactics View - ONLY AFTER DRAFT */}
-              {gameState.currentTurn === "FINISHED" && (
+              {gameState.gameStarted && (
                 <div style={{display:'flex', gap:'10px', justifyContent:'center', marginTop:'10px'}}>
                   <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 Pitch</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
                   <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 Pitch</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
                 </div>
               )}
 
-              <div style={{marginTop: '15px', display: 'flex', justifyContent:'center', gap:'10px'}}>
-                <button onClick={() => socket.emit('refReset')} style={{background:'blue', color:'white', padding:'8px'}}>RESET</button>
-                <button onClick={() => socket.emit('refStartDraft')} style={{background:'gold', padding:'8px', fontWeight:'bold'}}>START</button>
-                <button onClick={() => socket.emit('refClearArena')} style={{background:'purple', color:'white', padding:'8px'}}>CLEAR</button>
+              <div style={{marginTop: '15px', display: 'flex', flexDirection: 'column', gap:'10px'}}>
+                <div style={{display: 'flex', justifyContent: 'center', gap: '10px'}}>
+                  <button onClick={() => socket.emit('refReset')} style={{background:'blue', color:'white', padding:'8px'}}>RESET</button>
+                  <button onClick={() => socket.emit('refStartDraft')} style={{background:'gold', padding:'8px', fontWeight:'bold'}}>START</button>
+                  <button onClick={() => socket.emit('refClearArena')} style={{background:'purple', color:'white', padding:'8px'}}>CLEAR</button>
+                </div>
+                {/* FINAL MATCH READY BUTTON */}
+                {Object.keys(gameState.team1Tactics).length === 11 && Object.keys(gameState.team2Tactics).length === 11 && (
+                    <button style={{background:'lime', color:'black', fontWeight:'black', padding:'15px', fontSize:'1.2rem', border:'3px solid gold'}}>🔥 START THE MATCH 🔥</button>
+                )}
               </div>
             </div>
           )}
 
-          {/* DRAFTING PHASE - Referee can now see this too */}
+          {/* DRAFTING PHASE */}
           {gameState.gameStarted && (isRef || gameState[`${myUser?.role}Picks`]?.length < 11 || myUser?.role === 'spectator') && gameState.currentTurn !== "FINISHED" && (
             <div style={{marginTop:'15px'}}>
               <div style={{textAlign:'center', background:'#222', border:'1px solid gold', padding:'5px', marginBottom:'10px'}}><h3 style={{margin:0, color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44'}}>TURN: {gameState.currentTurn.toUpperCase()}</h3></div>
