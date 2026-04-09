@@ -32,8 +32,8 @@ function App() {
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
     });
 
-    socket.on('softReset', () => {
-        if(!isRef) setJoined(true); 
+    socket.on('softResetUI', () => {
+        if(!isRef) setJoined(true);
     });
 
     socket.on('clearArenaForce', () => {
@@ -56,7 +56,7 @@ function App() {
     socket.emit('joinWaitingRoom', { name: myName, ticketCode: myTxId });
   };
 
-  if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Arena Loading...</div>;
+  if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Arena Connecting...</div>;
   const myUser = gameState.allViewers.find(v => v.id === socket.id);
   const calcPts = (t) => t ? t.reduce((s, p) => s + (parseInt(p.points) || 0), 0) : 0;
 
@@ -161,7 +161,6 @@ function App() {
                 ))}
               </div>
 
-              {/* Requirement 2: Ref monitor appears ONLY after draft is FINISHED */}
               {gameState.currentTurn === "FINISHED" && (
                 <div style={{display:'flex', gap:'10px', justifyContent:'center', marginTop:'15px'}}>
                   <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 Tactics</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
@@ -182,7 +181,6 @@ function App() {
             </div>
           )}
 
-          {/* DRAFTING PHASE */}
           {gameState.gameStarted && (isRef || (myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`]?.length < 11) || myUser?.role === 'spectator') && gameState.currentTurn !== "FINISHED" && (
             <div style={{marginTop:'15px'}}>
               <div style={{textAlign:'center', background:'#222', border:'1px solid gold', padding:'5px', marginBottom:'10px'}}><h3 style={{margin:0, color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44'}}>TURN: {gameState.currentTurn.toUpperCase()}</h3></div>
@@ -202,7 +200,6 @@ function App() {
             </div>
           )}
 
-          {/* TACTICAL PHASE */}
           {gameState.gameStarted && myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`].length === 11 && (
              <div style={{marginTop:'20px', textAlign:'center'}}>
                 <h2 style={{color:'gold', margin:'0 0 10px 0'}}>TACTICS {gameState.matchLocked && "(LOCKED)"}</h2>
