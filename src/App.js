@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 
 const socket = io('https://football-backend-ykso.onrender.com');
@@ -13,38 +13,32 @@ function App() {
   const [newYoutube, setNewYoutube] = useState("");
   const [localQRs, setLocalQRs] = useState(["", "", "", "", "", ""]);
   const [activeSlot, setActiveSlot] = useState(null);
-  const hasAutoJoined = useRef(false);
 
   useEffect(() => {
     socket.on('gameStateUpdate', (state) => {
         setGameState(state);
+        // Direct state-check for joined status to prevent redirection loops
         const sTx = localStorage.getItem('myTxId');
         const sName = localStorage.getItem('draftName');
         const userInGame = state.allViewers.find(v => v.txId === sTx && v.name === sName);
         
-        if (userInGame) {
+        if (userInGame || isRef) {
             setJoined(true);
-            hasAutoJoined.current = true;
-        } else if (!isRef && hasAutoJoined.current) {
+        } else {
             setJoined(false);
-            hasAutoJoined.current = false;
         }
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
-    });
-
-    socket.on('softResetUI', () => {
-        if(!isRef) setJoined(true);
     });
 
     socket.on('clearArenaForce', () => {
         localStorage.removeItem('myTxId');
         localStorage.removeItem('draftName');
         setJoined(false);
-        hasAutoJoined.current = false;
-        if(!isRef) window.location.reload();
+        setIsRef(false);
+        window.location.reload();
     });
 
-    socket.on('refConfirm', (val) => { setIsRef(val); setJoined(true); hasAutoJoined.current = true; });
+    socket.on('refConfirm', (val) => { setIsRef(val); setJoined(true); });
     socket.on('error', (m) => alert(m));
     return () => socket.removeAllListeners();
   }, [isRef]);
@@ -56,7 +50,7 @@ function App() {
     socket.emit('joinWaitingRoom', { name: myName, ticketCode: myTxId });
   };
 
-  if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Arena Connecting...</div>;
+  if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Stadium Loading...</div>;
   const myUser = gameState.allViewers.find(v => v.id === socket.id);
   const calcPts = (t) => t ? t.reduce((s, p) => s + (parseInt(p.points) || 0), 0) : 0;
 
@@ -203,6 +197,19 @@ function App() {
           {gameState.gameStarted && myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`].length === 11 && (
              <div style={{marginTop:'20px', textAlign:'center'}}>
                 <h2 style={{color:'gold', margin:'0 0 10px 0'}}>TACTICS {gameState.matchLocked && "(LOCKED)"}</h2>
+                {/* 1. Formation Choice Dropdown */}
+                <select 
+                   value={gameState[`${myUser.role}Formation`]} 
+                   onChange={(e) => socket.emit('playerSetFormation', e.target.value)}
+                   disabled={gameState.matchLocked}
+                   style={{padding:'10px', background:'#222', color:'gold', border:'1px solid gold', marginBottom:'10px', width:'150px'}}
+                >
+                   <option value="4-4-2">4-4-2</option>
+                   <option value="4-3-3">4-3-3</option>
+                   <option value="4-2-3-1">4-2-3-1</option>
+                   <option value="3-5-2">3-5-2</option>
+                   <option value="5-4-1">5-4-1</option>
+                </select>
                 <TacticalPitch teamKey={myUser.role} canEdit={!gameState.matchLocked} />
                 {activeSlot !== null && !gameState.matchLocked && (
                    <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.95)', zIndex:1000, padding:'20px', overflowY:'auto'}}>
