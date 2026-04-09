@@ -32,8 +32,8 @@ function App() {
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
     });
 
-    socket.on('forceResetUI', () => {
-        if(!isRef) setJoined(true);
+    socket.on('softReset', () => {
+        if(!isRef) setJoined(true); 
     });
 
     socket.on('clearArenaForce', () => {
@@ -56,7 +56,7 @@ function App() {
     socket.emit('joinWaitingRoom', { name: myName, ticketCode: myTxId });
   };
 
-  if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Arena Connecting...</div>;
+  if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Arena Loading...</div>;
   const myUser = gameState.allViewers.find(v => v.id === socket.id);
   const calcPts = (t) => t ? t.reduce((s, p) => s + (parseInt(p.points) || 0), 0) : 0;
 
@@ -90,7 +90,7 @@ function App() {
                 <div key={i} onClick={() => canEdit && !gameState.matchLocked && setActiveSlot(sIdx)}
                      style={{
                         width: '28px', height: '28px', borderRadius: '50%', border: '1px solid gold',
-                        background: p ? '#111' : 'rgba(0,0,0,0.5)', color: 'white',
+                        background: p ? '#111' : 'rgba(0,0,0,0.4)', color: 'white',
                         fontSize: '0.35rem', display: 'flex', alignItems: 'center',
                         justifyContent: 'center', textAlign: 'center', cursor: (canEdit && !gameState.matchLocked) ? 'pointer' : 'default'
                      }}>
@@ -161,10 +161,11 @@ function App() {
                 ))}
               </div>
 
-              {gameState.gameStarted && (
+              {/* Requirement 2: Ref monitor appears ONLY after draft is FINISHED */}
+              {gameState.currentTurn === "FINISHED" && (
                 <div style={{display:'flex', gap:'10px', justifyContent:'center', marginTop:'15px'}}>
-                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 Pitch</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
-                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 Pitch</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
+                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 Tactics</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
+                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 Tactics</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
                 </div>
               )}
 
@@ -181,7 +182,7 @@ function App() {
             </div>
           )}
 
-          {/* PHASE 3: DRAFTING - Pitch is hidden here */}
+          {/* DRAFTING PHASE */}
           {gameState.gameStarted && (isRef || (myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`]?.length < 11) || myUser?.role === 'spectator') && gameState.currentTurn !== "FINISHED" && (
             <div style={{marginTop:'15px'}}>
               <div style={{textAlign:'center', background:'#222', border:'1px solid gold', padding:'5px', marginBottom:'10px'}}><h3 style={{margin:0, color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44'}}>TURN: {gameState.currentTurn.toUpperCase()}</h3></div>
@@ -201,13 +202,10 @@ function App() {
             </div>
           )}
 
-          {/* PHASE 4: TACTICS - Appears only when 11 picked */}
+          {/* TACTICAL PHASE */}
           {gameState.gameStarted && myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`].length === 11 && (
              <div style={{marginTop:'20px', textAlign:'center'}}>
                 <h2 style={{color:'gold', margin:'0 0 10px 0'}}>TACTICS {gameState.matchLocked && "(LOCKED)"}</h2>
-                <select onChange={(e) => socket.emit('playerSetFormation', e.target.value)} style={{padding:'10px', background:'#222', color:'gold', border:'1px solid gold', marginBottom:'10px'}}>
-                   <option value="4-4-2">4-4-2</option><option value="4-3-3">4-3-3</option><option value="4-2-3-1">4-2-3-1</option><option value="3-5-2">3-5-2</option><option value="5-4-1">5-4-1</option>
-                </select>
                 <TacticalPitch teamKey={myUser.role} canEdit={!gameState.matchLocked} />
                 {activeSlot !== null && !gameState.matchLocked && (
                    <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.95)', zIndex:1000, padding:'20px', overflowY:'auto'}}>
