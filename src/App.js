@@ -19,9 +19,9 @@ function App() {
         setGameState(state);
         const sTx = localStorage.getItem('myTxId');
         const sName = localStorage.getItem('draftName');
-        const userFound = state.allViewers.find(v => v.txId === sTx && v.name === sName);
+        const userExists = state.allViewers.find(v => v.txId === sTx && v.name === sName);
         
-        if (userFound || isRef) {
+        if (userExists || isRef) {
             setJoined(true);
         } else {
             setJoined(false);
@@ -29,12 +29,13 @@ function App() {
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
     });
 
-    socket.on('syncArenaPhase', (phase) => {
+    socket.on('gameSyncPhase', (phase) => {
         setActiveSlot(null);
         if (phase === 'LOBBY' && !isRef) setJoined(true);
     });
 
     socket.on('clearArenaForce', () => {
+        // Full wipe of credentials
         localStorage.removeItem('myTxId');
         localStorage.removeItem('draftName');
         setJoined(false);
@@ -54,7 +55,7 @@ function App() {
     socket.emit('joinWaitingRoom', { name: myName, ticketCode: myTxId });
   };
 
-  if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Arena Loading...</div>;
+  if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Arena Connecting...</div>;
   const myUser = gameState.allViewers.find(v => v.id === socket.id);
   const calcPts = (t) => t ? t.reduce((s, p) => s + (parseInt(p.points) || 0), 0) : 0;
 
