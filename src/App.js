@@ -19,13 +19,11 @@ function App() {
     socket.on('gameStateUpdate', (state) => {
         setGameState(state);
         const sTx = localStorage.getItem('myTxId');
-        // Check if user is in lobby by TxID
         const userInLobby = state.allViewers.find(v => v.txId === sTx);
         if (userInLobby || isRef) { setJoined(true); } else { setJoined(false); }
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
     });
 
-    // AUTO-SYNC: If connection resets, tell server who we are by TxID
     socket.on('connect', () => {
         const sTx = localStorage.getItem('myTxId');
         const sName = localStorage.getItem('draftName');
@@ -35,7 +33,6 @@ function App() {
     });
 
     socket.on('clearArenaForce', () => {
-        // THE REINFORCED WIPE: Erase phone memory completely
         localStorage.removeItem('myTxId');
         localStorage.removeItem('draftName');
         setJoined(false);
@@ -76,7 +73,7 @@ function App() {
     const rows = getRows(formation);
     let counter = 0;
     return (
-      <div style={{ background: '#1a472a', border: '2px solid white', borderRadius: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'space-around', aspectRatio: '2/3', padding: '10px', margin: '10px auto', width: '150px', boxShadow: '0 0 10px black' }}>
+      <div style={{ background: '#1a472a', border: '2px solid white', borderRadius: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'space-around', aspectRatio: '2/3', padding: '10px', margin: '10px auto', width: '130px', boxShadow: '0 0 10px black' }}>
         {rows.map((count, rIdx) => (
           <div key={rIdx} style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
             {Array.from({ length: count }).map((_, i) => {
@@ -84,7 +81,7 @@ function App() {
               const p = tactics[sIdx];
               return (
                 <div key={i} onClick={() => canEdit && !gameState.matchLocked && setActiveSlot(sIdx)}
-                     style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1px solid gold', background: p ? '#111' : 'rgba(0,0,0,0.4)', color: 'white', fontSize: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: (canEdit && !gameState.matchLocked) ? 'pointer' : 'default' }}>
+                     style={{ width: '24px', height: '24px', borderRadius: '50%', border: '1px solid gold', background: p ? '#111' : 'rgba(0,0,0,0.4)', color: 'white', fontSize: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: (canEdit && !gameState.matchLocked) ? 'pointer' : 'default' }}>
                   {p ? p.name.split(' ')[0] : ""}
                 </div>
               );
@@ -122,17 +119,7 @@ function App() {
             
             <div style={{display: 'flex', gap: '5px'}}>
                 <a href={gameState.youtubeLink} target="_blank" rel="noreferrer" style={{background: 'red', color: 'white', padding: '8px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.65rem'}}>WATCH THIS VIDEO</a>
-                <button 
-                  onClick={() => {
-                    if (myUser?.isPremium && myUser?.secureLink) {
-                        window.open(myUser.secureLink, '_blank');
-                    } else {
-                        alert("Ubu buryo bugenewe abishyuye 2,000 RWF gusa.");
-                    }
-                  }} 
-                  style={{background: 'gold', color: 'black', padding: '8px', borderRadius: '5px', fontWeight: 'bold', fontSize: '0.65rem', border: 'none', cursor: 'pointer'}}>
-                  SECURE VIP LIVE
-                </button>
+                <button onClick={() => { if (myUser?.isPremium && myUser?.secureLink) { window.open(myUser.secureLink, '_blank'); } else { alert("Ubu buryo bugenewe abishyuye 2,000 RWF gusa."); } }} style={{background: 'gold', color: 'black', padding: '8px', borderRadius: '5px', fontWeight: 'bold', fontSize: '0.65rem', border: 'none', cursor: 'pointer'}}>SECURE VIP LIVE</button>
             </div>
             <div style={{fontSize: '1rem', color: 'gold'}}>{gameState.allViewers.length} 👤</div>
           </div>
@@ -149,8 +136,27 @@ function App() {
               <div style={{marginBottom: '10px', display:'flex', gap:'5px'}}><input value={bannerUrl} onChange={e => setBannerUrl(e.target.value)} placeholder="Banner URL" style={{flex:1}} /><button onClick={() => socket.emit('refUpdateBanner', bannerUrl)} style={{background:'lime'}}>POST</button></div>
               <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'5px'}}>{localQRs.map((q, i) => <input key={i} value={q} onChange={e => {let n=[...localQRs]; n[i]=e.target.value; setLocalQRs(n)}} placeholder="QR URL" style={{fontSize:'0.6rem', background: '#222', color: 'gold'}} />)}</div>
               <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{background:'green', color:'white', width:'100%', padding:'5px', marginTop:'5px'}}>SAVE QRS</button>
+              
               <div style={{maxHeight:'120px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px', border:'1px solid #333'}}><div style={{fontSize:'0.6rem', color:'gold', textAlign:'center'}}>LOBBY</div>{gameState.allViewers.map(v => <div key={v.id} style={{fontSize:'0.8rem', padding:'5px', borderBottom:'1px solid #222', display:'flex', justifyContent:'space-between', alignItems:'center'}}><span>{v.name}</span><div><button onClick={() => socket.emit('refAssignRole', {userId: v.id, role:'team1'})} style={{background:'lime', marginRight:'5px'}}>T1</button><button onClick={() => socket.emit('refAssignRole', {userId: v.id, role:'team2'})} style={{background:'red', color:'white'}}>T2</button></div></div>)}</div>
-              <div style={{marginTop: '15px', display: 'flex', justifyContent:'center', gap:'10px'}}><button onClick={() => socket.emit('refReset')} style={{background:'blue', color:'white', padding:'8px'}}>RESET</button><button onClick={() => socket.emit('refStartDraft')} style={{background:'gold', padding:'8px', fontWeight:'bold'}}>START</button><button onClick={() => socket.emit('refClearArena')} style={{background:'purple', color:'white', padding:'8px'}}>CLEAR</button></div>
+              
+              {/* REF TACTICAL MONITOR */}
+              {gameState.currentTurn === "FINISHED" && (
+                <div style={{display:'flex', gap:'10px', justifyContent:'center', marginTop:'15px'}}>
+                   <div style={{textAlign:'center'}}><p style={{fontSize:'0.5rem', margin:0}}>T1 Pitch</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
+                   <div style={{textAlign:'center'}}><p style={{fontSize:'0.5rem', margin:0}}>T2 Pitch</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
+                </div>
+              )}
+
+              <div style={{marginTop: '15px', display: 'flex', flexDirection:'column', gap:'10px'}}>
+                <div style={{display:'flex', justifyContent:'center', gap:'10px'}}>
+                  <button onClick={() => socket.emit('refReset')} style={{background:'blue', color:'white', padding:'8px'}}>RESET</button>
+                  <button onClick={() => socket.emit('refStartDraft')} style={{background:'gold', padding:'8px', fontWeight:'bold'}}>START</button>
+                  <button onClick={() => socket.emit('refClearArena')} style={{background:'purple', color:'white', padding:'8px'}}>CLEAR</button>
+                </div>
+                {gameState.currentTurn === "FINISHED" && !gameState.matchLocked && (
+                    <button onClick={() => socket.emit('refLockMatch')} style={{background:'lime', color:'black', fontWeight:'bold', padding:'10px', border:'2px solid gold'}}>🚀 MATCH READY</button>
+                )}
+              </div>
             </div>
           )}
 
