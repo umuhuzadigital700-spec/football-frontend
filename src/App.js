@@ -19,12 +19,13 @@ function App() {
     socket.on('gameStateUpdate', (state) => {
         setGameState(state);
         const sTx = localStorage.getItem('myTxId');
+        // Check if user is in lobby by TxID
         const userInLobby = state.allViewers.find(v => v.txId === sTx);
         if (userInLobby || isRef) { setJoined(true); } else { setJoined(false); }
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
     });
 
-    // FREEZE PROTECTION: If user returns from a link, sync immediately
+    // AUTO-SYNC: If connection resets, tell server who we are by TxID
     socket.on('connect', () => {
         const sTx = localStorage.getItem('myTxId');
         const sName = localStorage.getItem('draftName');
@@ -33,17 +34,18 @@ function App() {
         }
     });
 
-    socket.on('gameSyncPhase', (phase) => {
-        setActiveSlot(null);
-        if (phase === 'LOBBY' && !isRef) setJoined(true);
-    });
-
     socket.on('clearArenaForce', () => {
+        // THE REINFORCED WIPE: Erase phone memory completely
         localStorage.removeItem('myTxId');
         localStorage.removeItem('draftName');
         setJoined(false);
         setIsRef(false);
-        window.location.reload();
+        window.location.reload(); 
+    });
+
+    socket.on('gameSyncPhase', (phase) => {
+        setActiveSlot(null);
+        if (phase === 'LOBBY' && !isRef) setJoined(true);
     });
 
     socket.on('refConfirm', (val) => { setIsRef(val); setJoined(true); });
