@@ -25,7 +25,7 @@ function App() {
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
     });
 
-    // AUTO-RESYNC: When user returns to tab, tell server who they are immediately
+    // AUTO-RESYNC: When returning from video link, tell server who we are
     socket.on('connect', () => {
         const sTx = localStorage.getItem('myTxId');
         const sName = localStorage.getItem('draftName');
@@ -135,7 +135,6 @@ function App() {
             </div>
             
             <div style={{display: 'flex', gap: '5px'}}>
-                {/* RENAMED BUTTON AS REQUESTED */}
                 <a href={gameState.youtubeLink} target="_blank" rel="noreferrer" style={{background: 'red', color: 'white', padding: '8px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.65rem'}}>WATCH THIS VIDEO</a>
                 
                 <button 
