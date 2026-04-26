@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import io from 'socket.io-client';
 
-const socket = io('https://football-backend-ykso.onrender.com');
+// This is the bridge to your server
+const socketURL = 'https://football-backend-ykso.onrender.com';
 
 function App() {
   const [gameState, setGameState] = useState(null);
+  const [socket, setSocket] = useState(null);
   const [myName, setMyName] = useState(localStorage.getItem('draftName') || "");
   const [myTxId, setMyTxId] = useState(localStorage.getItem('myTxId') || "");
   const [joined, setJoined] = useState(false);
@@ -15,33 +16,40 @@ function App() {
   const [localQRs, setLocalQRs] = useState(["", "", "", "", "", ""]);
   const [activeSlot, setActiveSlot] = useState(null);
 
+  // Initialize the connection safely for Vercel
   useEffect(() => {
-    socket.on('gameStateUpdate', (state) => {
+    const io = window.io; 
+    if (!io) {
+        console.error("Socket library not loaded yet");
+        return;
+    }
+    const newSocket = io(socketURL);
+    setSocket(newSocket);
+
+    newSocket.on('gameStateUpdate', (state) => {
         setGameState(state);
         const sTx = localStorage.getItem('myTxId');
-        const sName = localStorage.getItem('draftName');
         const userInLobby = state.allViewers.find(v => v.txId === sTx);
         if (userInLobby || isRef) { setJoined(true); } else { setJoined(false); }
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
     });
 
-    // AUTO-RESYNC: When returning from video link, tell server who we are
-    socket.on('connect', () => {
+    newSocket.on('connect', () => {
         const sTx = localStorage.getItem('myTxId');
         const sName = localStorage.getItem('draftName');
         if (sTx && sName) {
-            socket.emit('joinWaitingRoom', { name: sName, ticketCode: sTx });
+            newSocket.emit('joinWaitingRoom', { name: sName, ticketCode: sTx });
         }
     });
 
-    socket.on('forceJoinSuccess', () => { setJoined(true); });
+    newSocket.on('forceJoinSuccess', () => { setJoined(true); });
 
-    socket.on('gameSyncPhase', (phase) => {
+    newSocket.on('gameSyncPhase', (phase) => {
         setActiveSlot(null);
         if (phase === 'LOBBY' && !isRef) setJoined(true);
     });
 
-    socket.on('clearArenaForce', () => {
+    newSocket.on('clearArenaForce', () => {
         localStorage.removeItem('myTxId');
         localStorage.removeItem('draftName');
         setJoined(false);
@@ -49,12 +57,14 @@ function App() {
         window.location.reload();
     });
 
-    socket.on('refConfirm', (val) => { setIsRef(val); setJoined(true); });
-    socket.on('error', (m) => alert(m));
-    return () => socket.removeAllListeners();
+    newSocket.on('refConfirm', (val) => { setIsRef(val); setJoined(true); });
+    newSocket.on('error', (m) => alert(m));
+
+    return () => newSocket.close();
   }, [isRef]);
 
   const handleJoin = () => {
+    if (!socket) return alert("System connecting... please wait.");
     if (!myName || !myTxId) return alert("Missing Info");
     localStorage.setItem('draftName', myName);
     localStorage.setItem('myTxId', myTxId);
@@ -62,7 +72,7 @@ function App() {
   };
 
   if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Arena Connecting...</div>;
-  const myUser = gameState.allViewers.find(v => v.id === socket.id);
+  const myUser = gameState.allViewers.find(v => v.id === (socket ? socket.id : null));
   const calcPts = (t) => t ? t.reduce((s, p) => s + (parseInt(p.points) || 0), 0) : 0;
 
   const getRows = (f) => {
@@ -127,7 +137,6 @@ function App() {
         </div>
       ) : (
         <div style={{ padding: '15px' }}>
-          {/* TOP BAR */}
           <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
             <div>
                 <div style={{fontSize: '0.7rem', color: 'gold'}}>PLAYER: {isRef ? "ERIC (REF)" : myName}</div>
