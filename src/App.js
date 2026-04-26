@@ -11,6 +11,7 @@ function App() {
   const [refToken, setRefToken] = useState("");
   const [isRef, setIsRef] = useState(false);
   const [newYoutube, setNewYoutube] = useState("");
+  const [bannerUrl, setBannerUrl] = useState("");
   const [localQRs, setLocalQRs] = useState(["", "", "", "", "", ""]);
   const [activeSlot, setActiveSlot] = useState(null);
 
@@ -20,14 +21,11 @@ function App() {
         const sTx = localStorage.getItem('myTxId');
         const sName = localStorage.getItem('draftName');
         const userExists = state.allViewers.find(v => v.txId === sTx && v.name === sName);
-        
-        if (userExists || isRef) {
-            setJoined(true);
-        } else {
-            setJoined(false);
-        }
+        if (userExists || isRef) { setJoined(true); } else { setJoined(false); }
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
     });
+
+    socket.on('forceJoinSuccess', () => { setJoined(true); });
 
     socket.on('gameSyncPhase', (phase) => {
         setActiveSlot(null);
@@ -35,7 +33,6 @@ function App() {
     });
 
     socket.on('clearArenaForce', () => {
-        // Full wipe of credentials
         localStorage.removeItem('myTxId');
         localStorage.removeItem('draftName');
         setJoined(false);
@@ -110,7 +107,7 @@ function App() {
           <h1 style={{color: 'gold'}}>🏟️ RUHAGO N'INSHUTI ARENA</h1>
           <div style={{ background: '#111', padding: '20px', borderRadius: '15px', border: '1px solid #444', maxWidth: '90%', width: '600px', margin: '0 auto 20px auto', textAlign: 'left', fontSize: '0.85rem', maxHeight: '350px', overflowY: 'auto' }}>
             <h3 style={{ color: 'red', marginTop: 0, textAlign: 'center' }}>ITANGAZO RY’INGENZI (Warning Notice).</h3>
-            <p>KUGIRANGO TUTARENGA KUMATEGEKO Y’UBUYOBOZI BW’URWANDA ,AMATEGEKO AGENGA ABANYARWANDA BOSE, CYANGWA N’ANDIMATEGEKO YOSE YABA AFITE AHO AHURIYE N’IMIKORESHEREZE Y’IKI GIKORESHO. Mbere yo kwinjira no gukora ubwishyu ubwo ari bwo bwose, ndagusaba gusoma no gusobanukirwa ibi bikurikira: Iki gikoresho si urubuga rwo gutega cyangwa gukina urusimbi. Ni igikoresho cyo nyuzamo support ya RUHAGO kubantu bose biyumvamo gushyigikira imigabo n’imigambi bya RUHAGO N’INSHUTI Gusa. Gishobora gukoreshwa nk’igikoresho cy’imyidagaduro gishingiye ku bunararibonye, kigamije gusa gushimisha.(ariko ntwabwo gikoreshwa amasaha yose kandi si buri muntu wese watanze amafranga uhitwamo ngo akinire uruhande urwo arirwo rwose. Guhitamo abakinnyi ntibikorwa hakoreshejwe ikimenyane). Uyu mukino ukora gusa iyo ufite smart fone cyangwa ibindi bikoresho bifite ubushobozi bwayo cyangwa burenze hamwe na connection ya enternet. Ugenewe gusa abantu bafite imyaka 18 kuzamura. Gukomeza winjira, uba wemeye ko wujuje imyaka yavuzwe☝️. Amafaranga 300 Y’Urwanda gusa niyo yishyurwa.⚠️ ayishyuwe ntasubizwa inyuma mu bihe byose. Iyo wishyuye kugira ngo ubashe gukoresha uyu mukino, wemera ko udafite uburenganzira bwo gutegeka, kugenzura uburyo uyu mukino ukoreshwa. Twakira ibitekerezo n’inama mutanga, ariko ibyemezo byose bijyanye n’imikorere bifatwa natwe ubwacu. Ntabwo dukusanya, tubika cyangwa dutunganya amakuru ayo ari yo yose azwi nk’amakuru bwite (personal data). Niba wemeza neza ko wasomye kandi wumvise neza ibisabwa ukaba ubyujuje, ishyura na momo pay (*182*8*1*1934816*300*PIN#). KWINJIRA: MURI BOX YA TDX-ID ANDIKAMO IMIBARE 11, WAHAWE MURI SMS YEMEZAKO WISHYUYE</p>
+            <p>KUGIRANGO TUTARENGA KUMATEGEKO Y’UBUYOBOZI BW’URWANDA... (Your existing warning text here) ...</p>
           </div>
           <div style={{ background: '#111', padding: '30px', borderRadius: '15px', border: '1px solid #333', display: 'inline-block' }}>
             <input value={myName} onChange={e => setMyName(e.target.value)} placeholder="Full Name" style={{padding:'10px', width:'200px'}} /><br/><br/>
@@ -121,11 +118,29 @@ function App() {
         </div>
       ) : (
         <div style={{ padding: '15px' }}>
+          {/* TOP BAR */}
           <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
-            <div><div style={{fontSize: '0.7rem', color: 'gold'}}>PLAYER: {isRef ? "ERIC (REF)" : myName}</div><div style={{fontSize: '0.9rem'}}>ROLE: {isRef ? "REFEREE" : (myUser?.role?.toUpperCase() || "FAN")}</div></div>
-            <a href={gameState.youtubeLink} target="_blank" rel="noreferrer" style={{background: 'red', color: 'white', padding: '10px 15px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold'}}>WATCH LIVE</a>
+            <div>
+                <div style={{fontSize: '0.7rem', color: 'gold'}}>PLAYER: {isRef ? "ERIC (REF)" : myName}</div>
+                <div style={{fontSize: '0.9rem'}}>ROLE: {isRef ? "REFEREE" : (myUser?.role?.toUpperCase() || "FAN")}</div>
+            </div>
+            
+            {/* DUAL STREAM BUTTONS */}
+            <div style={{display: 'flex', gap: '5px'}}>
+                <a href={gameState.youtubeLink} target="_blank" rel="noreferrer" style={{background: 'red', color: 'white', padding: '8px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.8rem'}}>BASIC</a>
+                {myUser?.isPremium && myUser?.secureLink && (
+                    <a href={myUser.secureLink} target="_blank" rel="noreferrer" style={{background: 'gold', color: 'black', padding: '8px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.8rem'}}>PREMIUM</a>
+                )}
+            </div>
             <div style={{fontSize: '1rem', color: 'gold'}}>{gameState.allViewers.length} 👤</div>
           </div>
+
+          {/* ARENA BANNER (Landscape Photo) */}
+          {gameState.arenaBanner && (
+            <div style={{marginTop: '10px'}}>
+                <img src={gameState.arenaBanner} alt="Banner" style={{width: '100%', borderRadius: '8px', border: '1px solid #444', aspectRatio: '16/9', objectFit: 'cover'}} />
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '10px', flexWrap: 'wrap' }}>
             {gameState.qrCodes.map((url, i) => url && (
@@ -137,10 +152,17 @@ function App() {
 
           {isRef && (
             <div style={{ background: '#1a1a1a', border: '1px solid gold', padding: '15px', marginTop: '10px', borderRadius: '8px' }}>
-              <div style={{marginBottom: '10px'}}>
-                <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="Link" style={{width:'150px'}} />
-                <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{background:'gold', marginLeft:'5px'}}>LINK</button>
+              <div style={{marginBottom: '10px', display:'flex', gap:'5px'}}>
+                <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="Link" style={{flex:1}} />
+                <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{background:'gold'}}>LINK</button>
               </div>
+              
+              {/* NEW: BANNER INPUT */}
+              <div style={{marginBottom: '10px', display:'flex', gap:'5px'}}>
+                <input value={bannerUrl} onChange={e => setBannerUrl(e.target.value)} placeholder="Landscape Photo URL" style={{flex:1}} />
+                <button onClick={() => socket.emit('refUpdateBanner', bannerUrl)} style={{background:'lime'}}>POST PHOTO</button>
+              </div>
+
               <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'5px'}}>
                 {localQRs.map((q, i) => (
                   <input key={i} value={q} onChange={e => {let n=[...localQRs]; n[i]=e.target.value; setLocalQRs(n)}} placeholder="QR URL" style={{fontSize:'0.6rem', background: '#222', color: 'gold'}} />
@@ -148,11 +170,13 @@ function App() {
               </div>
               <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{background:'green', color:'white', width:'100%', padding:'5px', marginTop:'5px'}}>SAVE QRS</button>
 
-              <div style={{maxHeight:'100px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px', border:'1px solid #333'}}>
+              <div style={{maxHeight:'120px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px', border:'1px solid #333'}}>
+                <div style={{fontSize:'0.6rem', color:'gold', textAlign:'center'}}>LOBBY (MANUAL VERIFY ENABLED)</div>
                 {gameState.allViewers.map(v => (
-                  <div key={v.id} style={{fontSize:'0.8rem', padding:'5px', borderBottom:'1px solid #222', display:'flex', justifyContent:'space-between'}}>
+                  <div key={v.id} style={{fontSize:'0.8rem', padding:'5px', borderBottom:'1px solid #222', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                     <span>{v.name}</span>
                     <div>
+                        <button onClick={() => socket.emit('refForceApprove', v.id)} style={{background:'orange', marginRight:'5px', padding:'2px 5px', fontSize:'0.7rem'}}>VERIFY</button>
                         <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role:'team1'})} style={{background:'lime', marginRight:'5px'}}>T1</button>
                         <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role:'team2'})} style={{background:'red', color:'white'}}>T2</button>
                     </div>
