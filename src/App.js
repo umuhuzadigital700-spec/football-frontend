@@ -107,7 +107,7 @@ function App() {
           <h1 style={{color: 'gold'}}>🏟️ RUHAGO N'INSHUTI ARENA</h1>
           <div style={{ background: '#111', padding: '20px', borderRadius: '15px', border: '1px solid #444', maxWidth: '90%', width: '600px', margin: '0 auto 20px auto', textAlign: 'left', fontSize: '0.85rem', maxHeight: '350px', overflowY: 'auto' }}>
             <h3 style={{ color: 'red', marginTop: 0, textAlign: 'center' }}>ITANGAZO RY’INGENZI (Warning Notice).</h3>
-            <p>KUGIRANGO TUTARENGA KUMATEGEKO Y’UBUYOBOZI BW’URWANDA... (Your existing warning text here) ...</p>
+            <p>KUGIRANGO TUTARENGA KUMATEGEKO Y’UBUYOBOZI BW’URWANDA ,AMATEGEKO AGENGA ABANYARWANDA BOSE, CYANGWA N’ANDIMATEGEKO YOSE YABA AFITE AHO AHURIYE N’IMIKORESHEREZE Y’IKI GIKORESHO. Mbere yo kwinjira no gukora ubwishyu ubwo ari bwo bwose, ndagusaba gusoma no gusobanukirwa ibi bikurikira: Iki gikoresho si urubuga rwo gutega cyangwa gukina urusimbi. Ni igikoresho cyo nyuzamo support ya RUHAGO kubantu bose biyumvamo gushyigikira imigabo n’imigambi bya RUHAGO N’INSHUTI Gusa. Gishobora gukoreshwa nk’igikoresho cy’imyidagaduro gishingiye ku bunararibonye, kigamije gusa gushimisha.(ariko ntwabwo gikoreshwa amasaha yose kandi si buri muntu wese watanze amafranga uhitwamo ngo akinire uruhande urwo arirwo rwose. Guhitamo abakinnyi ntibikorwa hakoreshejwe ikimenyane). Uyu mukino ukora gusa iyo ufite smart fone cyangwa ibindi bikoresho bifite ubushobozi bwayo cyangwa burenze hamwe na connection ya enternet. Ugenewe gusa abantu bafite imyaka 18 kuzamura. Gukomeza winjira, uba wemeye ko wujuje imyaka yavuzwe☝️. Amafaranga 300 Y’Urwanda gusa niyo yishyurwa.⚠️ ayishyuwe ntasubizwa inyuma mu bihe byose. Iyo wishyuye kugira ngo ubashe gukoresha uyu mukino, wemera ko udafite uburenganzira bwo gutegeka, kugenzura uburyo uyu mukino ukoreshwa. Twakira ibitekerezo n’inama mutanga, ariko ibyemezo byose bijyanye n’imikorere bifatwa natwe ubwacu. Ntabwo dukusanya, tubika cyangwa dutunganya amakuru ayo ari yo yose azwi nk’amakuru bwite (personal data). Niba wemeza neza ko wasomye kandi wumvise neza ibisabwa ukaba ubyujuje, ishyura na momo pay (*182*8*1*1934816*300*PIN#). KWINJIRA: MURI BOX YA TDX-ID ANDIKAMO IMIBARE 11, WAHAWE MURI SMS YEMEZAKO WISHYUYE</p>
           </div>
           <div style={{ background: '#111', padding: '30px', borderRadius: '15px', border: '1px solid #333', display: 'inline-block' }}>
             <input value={myName} onChange={e => setMyName(e.target.value)} placeholder="Full Name" style={{padding:'10px', width:'200px'}} /><br/><br/>
@@ -125,7 +125,6 @@ function App() {
                 <div style={{fontSize: '0.9rem'}}>ROLE: {isRef ? "REFEREE" : (myUser?.role?.toUpperCase() || "FAN")}</div>
             </div>
             
-            {/* DUAL STREAM BUTTONS */}
             <div style={{display: 'flex', gap: '5px'}}>
                 <a href={gameState.youtubeLink} target="_blank" rel="noreferrer" style={{background: 'red', color: 'white', padding: '8px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.8rem'}}>BASIC</a>
                 {myUser?.isPremium && myUser?.secureLink && (
@@ -135,7 +134,6 @@ function App() {
             <div style={{fontSize: '1rem', color: 'gold'}}>{gameState.allViewers.length} 👤</div>
           </div>
 
-          {/* ARENA BANNER (Landscape Photo) */}
           {gameState.arenaBanner && (
             <div style={{marginTop: '10px'}}>
                 <img src={gameState.arenaBanner} alt="Banner" style={{width: '100%', borderRadius: '8px', border: '1px solid #444', aspectRatio: '16/9', objectFit: 'cover'}} />
@@ -157,7 +155,6 @@ function App() {
                 <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{background:'gold'}}>LINK</button>
               </div>
               
-              {/* NEW: BANNER INPUT */}
               <div style={{marginBottom: '10px', display:'flex', gap:'5px'}}>
                 <input value={bannerUrl} onChange={e => setBannerUrl(e.target.value)} placeholder="Landscape Photo URL" style={{flex:1}} />
                 <button onClick={() => socket.emit('refUpdateBanner', bannerUrl)} style={{background:'lime'}}>POST PHOTO</button>
