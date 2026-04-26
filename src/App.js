@@ -20,9 +20,18 @@ function App() {
         setGameState(state);
         const sTx = localStorage.getItem('myTxId');
         const sName = localStorage.getItem('draftName');
-        const userExists = state.allViewers.find(v => v.txId === sTx && v.name === sName);
-        if (userExists || isRef) { setJoined(true); } else { setJoined(false); }
+        const userInLobby = state.allViewers.find(v => v.txId === sTx);
+        if (userInLobby || isRef) { setJoined(true); } else { setJoined(false); }
         if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
+    });
+
+    // AUTO-RESYNC: When user returns to tab, tell server who they are immediately
+    socket.on('connect', () => {
+        const sTx = localStorage.getItem('myTxId');
+        const sName = localStorage.getItem('draftName');
+        if (sTx && sName) {
+            socket.emit('joinWaitingRoom', { name: sName, ticketCode: sTx });
+        }
     });
 
     socket.on('forceJoinSuccess', () => { setJoined(true); });
@@ -118,7 +127,7 @@ function App() {
         </div>
       ) : (
         <div style={{ padding: '15px' }}>
-          {/* TOP BAR (Locked Face) */}
+          {/* TOP BAR */}
           <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
             <div>
                 <div style={{fontSize: '0.7rem', color: 'gold'}}>PLAYER: {isRef ? "ERIC (REF)" : myName}</div>
@@ -126,15 +135,24 @@ function App() {
             </div>
             
             <div style={{display: 'flex', gap: '5px'}}>
-                <a href={gameState.youtubeLink} target="_blank" rel="noreferrer" style={{background: 'red', color: 'white', padding: '8px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.8rem'}}>BASIC</a>
-                {myUser?.isPremium && myUser?.secureLink && (
-                    <a href={myUser.secureLink} target="_blank" rel="noreferrer" style={{background: 'gold', color: 'black', padding: '8px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.8rem'}}>PREMIUM</a>
-                )}
+                {/* RENAMED BUTTON AS REQUESTED */}
+                <a href={gameState.youtubeLink} target="_blank" rel="noreferrer" style={{background: 'red', color: 'white', padding: '8px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.65rem'}}>WATCH THIS VIDEO</a>
+                
+                <button 
+                    onClick={() => {
+                        if (myUser?.isPremium && myUser?.secureLink) {
+                            window.open(myUser.secureLink, '_blank');
+                        } else {
+                            alert("Ubu buryo bugenewe abishyuye 2,000 RWF gusa. (This is for 2000 RWF VIP users only)");
+                        }
+                    }} 
+                    style={{background: 'gold', color: 'black', padding: '8px', borderRadius: '5px', fontWeight: 'bold', fontSize: '0.65rem', border: 'none', cursor: 'pointer'}}>
+                    SECURE VIP LIVE
+                </button>
             </div>
             <div style={{fontSize: '1rem', color: 'gold'}}>{gameState.allViewers.length} 👤</div>
           </div>
 
-          {/* ARENA BANNER (The New Landscape Area) */}
           {gameState.arenaBanner && (
             <div style={{marginTop: '10px'}}>
                 <img src={gameState.arenaBanner} alt="Banner" style={{width: '100%', borderRadius: '8px', border: '1px solid #444', aspectRatio: '16/9', objectFit: 'cover'}} />
@@ -152,13 +170,12 @@ function App() {
           {isRef && (
             <div style={{ background: '#1a1a1a', border: '1px solid gold', padding: '15px', marginTop: '10px', borderRadius: '8px' }}>
               <div style={{marginBottom: '10px', display:'flex', gap:'5px'}}>
-                <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="Link" style={{flex:1}} />
-                <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{background:'gold'}}>LINK</button>
+                <input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="Public Link URL" style={{flex:1}} />
+                <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{background:'gold'}}>SET VIDEO</button>
               </div>
               
-              {/* NEW CONTROL: POST PHOTO */}
               <div style={{marginBottom: '10px', display:'flex', gap:'5px'}}>
-                <input value={bannerUrl} onChange={e => setBannerUrl(e.target.value)} placeholder="Photo URL" style={{flex:1}} />
+                <input value={bannerUrl} onChange={e => setBannerUrl(e.target.value)} placeholder="Landscape Photo URL" style={{flex:1}} />
                 <button onClick={() => socket.emit('refUpdateBanner', bannerUrl)} style={{background:'lime'}}>POST PHOTO</button>
               </div>
 
@@ -170,6 +187,7 @@ function App() {
               <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{background:'green', color:'white', width:'100%', padding:'5px', marginTop:'5px'}}>SAVE QRS</button>
 
               <div style={{maxHeight:'120px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px', border:'1px solid #333'}}>
+                <div style={{fontSize:'0.6rem', color:'gold', textAlign:'center'}}>LOBBY (MANUAL VERIFY)</div>
                 {gameState.allViewers.map(v => (
                   <div key={v.id} style={{fontSize:'0.8rem', padding:'5px', borderBottom:'1px solid #222', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                     <span>{v.name}</span>
@@ -182,30 +200,19 @@ function App() {
                 ))}
               </div>
 
-              {/* EVERYTHING ELSE BELOW IS LOCKED ORIGINAL LOGIC */}
-              {gameState.currentTurn === "FINISHED" && (
-                <div style={{display:'flex', gap:'10px', justifyContent:'center', marginTop:'15px'}}>
-                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 Tactics</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
-                  <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T2 Tactics</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
-                </div>
-              )}
-
               <div style={{marginTop: '15px', display: 'flex', flexDirection:'column', gap:'10px'}}>
                 <div style={{display:'flex', justifyContent:'center', gap:'10px'}}>
                   <button onClick={() => socket.emit('refReset')} style={{background:'blue', color:'white', padding:'8px'}}>RESET</button>
                   <button onClick={() => socket.emit('refStartDraft')} style={{background:'gold', padding:'8px', fontWeight:'bold'}}>START</button>
                   <button onClick={() => socket.emit('refClearArena')} style={{background:'purple', color:'white', padding:'8px'}}>CLEAR</button>
                 </div>
-                {gameState.currentTurn === "FINISHED" && !gameState.matchLocked && (
-                    <button onClick={() => socket.emit('refLockMatch')} style={{background:'lime', color:'black', fontWeight:'bold', padding:'10px', border:'2px solid gold'}}>🚀 MATCH READY</button>
-                )}
               </div>
             </div>
           )}
 
           {gameState.gameStarted && gameState.currentTurn !== "FINISHED" && (
             <div style={{marginTop:'15px'}}>
-              <div style={{textAlign:'center', background:'#222', border:'1px solid gold', padding:'5px', marginBottom:'10px'}}><h3 style={{margin:0, color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44'}}>TURN: {gameState.currentTurn.toUpperCase()}</h3></div>
+              <div style={{textAlign:'center', background:'#222', border:'1px solid gold', padding:'5px', marginBottom:'10px'}}><h3 style={{margin:0, color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44'}}>TURN: {gameState.currentTurn.toUpperCase()} {myUser?.role === gameState.currentTurn && "(YOUR TURN!)"}</h3></div>
               <div style={{display:'flex', gap:'10px'}}>
                 <div key={gameState.availableCards.length} style={{flex: 2.5, display:'flex', flexWrap:'wrap', gap:'5px', maxHeight:'50vh', overflowY:'auto'}}>
                   {gameState.availableCards.map(c => <div key={c.id} onClick={() => !isRef && socket.emit('playerPickCard', c.id)} style={{border:'1px solid #444', padding:'5px', width:'75px', background:'#111', fontSize:'0.7rem', cursor: (!isRef && myUser?.role === gameState.currentTurn) ? 'pointer' : 'not-allowed', opacity: (!isRef && myUser?.role === gameState.currentTurn) ? 1 : 0.4}}><b>{c.name}</b><br/><span style={{color:'gold'}}>{c.pos}</span><br/><span style={{color:'#0f0'}}>{c.points} pts</span></div>)}
