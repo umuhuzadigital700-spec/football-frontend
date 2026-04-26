@@ -118,7 +118,7 @@ function App() {
         </div>
       ) : (
         <div style={{ padding: '15px' }}>
-          {/* TOP BAR */}
+          {/* TOP BAR (Locked Face) */}
           <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
             <div>
                 <div style={{fontSize: '0.7rem', color: 'gold'}}>PLAYER: {isRef ? "ERIC (REF)" : myName}</div>
@@ -134,6 +134,7 @@ function App() {
             <div style={{fontSize: '1rem', color: 'gold'}}>{gameState.allViewers.length} 👤</div>
           </div>
 
+          {/* ARENA BANNER (The New Landscape Area) */}
           {gameState.arenaBanner && (
             <div style={{marginTop: '10px'}}>
                 <img src={gameState.arenaBanner} alt="Banner" style={{width: '100%', borderRadius: '8px', border: '1px solid #444', aspectRatio: '16/9', objectFit: 'cover'}} />
@@ -155,8 +156,9 @@ function App() {
                 <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{background:'gold'}}>LINK</button>
               </div>
               
+              {/* NEW CONTROL: POST PHOTO */}
               <div style={{marginBottom: '10px', display:'flex', gap:'5px'}}>
-                <input value={bannerUrl} onChange={e => setBannerUrl(e.target.value)} placeholder="Landscape Photo URL" style={{flex:1}} />
+                <input value={bannerUrl} onChange={e => setBannerUrl(e.target.value)} placeholder="Photo URL" style={{flex:1}} />
                 <button onClick={() => socket.emit('refUpdateBanner', bannerUrl)} style={{background:'lime'}}>POST PHOTO</button>
               </div>
 
@@ -168,7 +170,6 @@ function App() {
               <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{background:'green', color:'white', width:'100%', padding:'5px', marginTop:'5px'}}>SAVE QRS</button>
 
               <div style={{maxHeight:'120px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px', border:'1px solid #333'}}>
-                <div style={{fontSize:'0.6rem', color:'gold', textAlign:'center'}}>LOBBY (MANUAL VERIFY ENABLED)</div>
                 {gameState.allViewers.map(v => (
                   <div key={v.id} style={{fontSize:'0.8rem', padding:'5px', borderBottom:'1px solid #222', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                     <span>{v.name}</span>
@@ -181,6 +182,7 @@ function App() {
                 ))}
               </div>
 
+              {/* EVERYTHING ELSE BELOW IS LOCKED ORIGINAL LOGIC */}
               {gameState.currentTurn === "FINISHED" && (
                 <div style={{display:'flex', gap:'10px', justifyContent:'center', marginTop:'15px'}}>
                   <div style={{textAlign:'center'}}><p style={{fontSize:'0.6rem', color:'gold', margin:0}}>T1 Tactics</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
