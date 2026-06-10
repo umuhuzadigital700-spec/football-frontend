@@ -15,6 +15,10 @@ function App() {
   const [localQRs, setLocalQRs] = useState(["", "", "", "", "", ""]);
   const [activeSlot, setActiveSlot] = useState(null);
 
+  // === START OF REFEREE LOBBY SEARCH UPGRADE ===
+  const [lobbySearch, setLobbySearch] = useState("");
+  // === END OF REFEREE LOBBY SEARCH UPGRADE ===
+
   useEffect(() => {
     socket.on('gameStateUpdate', (state) => {
         setGameState(state);
@@ -98,8 +102,9 @@ function App() {
         <div style={{ textAlign: 'center', paddingTop: '20px' }}>
           <h1 style={{color: 'gold'}}>🏟️ RUHAGO N'INSHUTI ARENA</h1>
           <div style={{ background: '#111', padding: '20px', borderRadius: '15px', border: '1px solid #444', maxWidth: '90%', width: '600px', margin: '0 auto 20px auto', textAlign: 'left', fontSize: '0.85rem', maxHeight: '350px', overflowY: 'auto' }}>
-            <h3 style={{ color: 'red', marginTop: 0, textAlign: 'center' }}>ITANGAZO RY’INGENZI (Warning Notice).</h3>
-            <p>KUGIRANGO TUTARENGA KUMATEGEKO Y’UBUYOBOZI BW’URWANDA ,AMATEGEKO AGENGA ABANYARWANDA BOSE, CYANGWA N’ANDIMATEGEKO YOSE YABA AFITE AHO AHURIYE N’IMIKORESHEREZE Y’IKI GIKORESHO. Mbere yo kwinjira no gukora ubwishyu ubwo ari bwo bwose, ndagusaba gusoma no gusobanukirwa ibi bikurikira: Iki gikoresho si urubuga rwo gutega cyangwa gukina urusimbi. Ni igikoresho cyo nyuzamo support ya RUHAGO kubantu bose biyumvamo gushyigikira imigabo n’imigambi bya RUHAGO N’INSHUTI Gusa. Gishobora gukoreshwa nk’igikoresho cy’imyidagaduro gishingiye ku bunararibonye, kigamije gusa gushimisha.(ariko ntwabwo gikoreshwa amasaha yose kandi si buri muntu wese watanze amafranga uhitwamo ngo akinire uruhande urwo arirwo rwose. Guhitamo abakinnyi ntibikorwa hakoreshejwe ikimenyane). Uyu mukino ukora gusa iyo ufite smart fone cyangwa ibindi bikoresho bifite ubushobozi bwayo cyangwa burenze hamwe na connection ya enternet. Ugenewe gusa abantu bafite imyaka 18 kuzamura. Gukomeza winjira, uba wemeye ko wujuje imyaka yavuzwe☝️. Amafaranga 300 Y’Urwanda gusa niyo yishyurwa.⚠️ ayishyuwe ntasubizwa inyuma mu bihe byose. Iyo wishyuye kugira ngo ubashe gukoresha uyu mukino, wemera ko udafite uburenganzira bwo gutegeka, kugenzura uburyo uyu mukino ukoreshwa. Twakira ibitekerezo n’inama mutanga, ariko ibyemezo byose bijyanye n’imikorere bifatwa natwe ubwacu. Ntabwo dukusanya, tubika cyangwa dutunganya amakuru ayo ari yo yose azwi nk’amakuru bwite (personal data). Niba wemeza neza ko wasomye kandi wumvise neza ibisabwa ukaba ubyujuje, ishyura na momo pay (*182*8*1*1934816*300*PIN#). KWINJIRA: MURI BOX YA TDX-ID ANDIKAMO IMIBARE 11, WAHAWE MURI SMS YEMEZAKO WISHYUYE</p>
+            <h3 style={{ color: 'red', marginTop: 0, textAlign: 'center' }}>ITANGAZO RY'INGENZI (Warning Notice).</h3>
+            <p>KUGIRANGO TUTARENGA KUMATEGEKO YOSE  AFITE AHO AHURIYE N'ICURUZWA RYA SERVICES IZO ARI ZO ZOSE, BIKOREWE ONLINE BY INTERNET. Mbere yo gukora ubwishyu ubwo ari bwo bwose kugirango ubone uko winjira, banza some unasobanukirwe: Iki gikoresho si urubuga rwo gutega cyangwa gukina urusimbi (Nyiri rubuga afite uburenganzira busesuye bwo gushyiraho ibihembo bigenewe bamwe mubakoresheje iki gikoresho). (NUBWO AMAFARANGA AGURWA TIKE YO KWINJIRA, AZIFASHISHWA MUGUSHYIGIKIRA ABANTU BAFITE IMPANO ZIFITE AHO ZIHURIRA NA RUHAGO, UGURA ITIKE WESE AGOMBA KWEMERA KO NTAWUNDI MUNTU CYANGWA URWEGO RWIGENGA CYANGWA RWA RETA IYO ARIYO YOSE BAGOMBA GUSHYIRAHO ITEGEKO RY’IGENAMIGAMBI CYANGWA INGENGABIHE Y’IBIKORWA BIGENDANYE NO KUZAMURA IZO MPANO HIFASHISHIJWE AYO MAFARANGA MUGIHE NYIRIGIKORESHO ATABYEMEJE, URETSE GUSA IMISORO). nta gihe ntarengwa uwishyuye cyangwa undi wese yemerewe gushyiriraho nyirigikoresho ngo abone uburenganzira bwo kurushanwa. Igihe cyo kurushanwa cyaburi muntu wishyuye kijyenwa na nyigikoresho gusa, bigendanye n’ibyihutirwa mumboni za nyigikoresho. Iki gikoresho, Gishobora nogukoreshwa nk'igikoresho cy'imyidagaduro ishingiye ku bunararibonye cyangwa ubusesengunzi bwite bw’urushanwa, kigamije Ishimisha .(ariko gikoreshwa mumasaha yajyenwe na nyiracyo gusa). Uyu mukino ukora gusa iyo ufite smart fone cyangwa ibindi bikoresho bifite ubushobozi bwayo cyangwa burenze hamwe na connection ya enternet. Ugenewe gusa abantu bafite imyaka 18 kuzamura. Gukomeza winjira, uba wemeye ko wujuje imyaka yavuzwe☝️. Amafaranga 300 cyangwa 2000 Y'Urwanda gusa niyo yishyurwa.⚠️ ayishyuwe ntasubizwa inyuma mu bihe byose. Iyo wishyuye kugira ngo ubashe gukoresha uyu mukino, wemera ko udafite uburenganzira bwo gutegeka, kugenzura uburyo uyu mukino ukoreshwa. Twakira ibitekerezo n'inama mutanga, ariko ibyemezo byose bijyanye n'imikorere bifatwa natwe ubwacu. Ntabwo dukusanya, tubika cyangwa dutunganya amakuru ayo ari yo yose azwi nk'amakuru bwite (personal data). Niba wemeza neza ko wasomye kandi wumvise neza ibisabwa ukaba ubyujuje, ishyura na momo pay (*182*8*1*1934816*300*PIN#). KWINJIRA: MURI BOX YA TDX-ID ANDIKAMO IMIBARE 11, WAHAWE MURI SMS YEMEZAKO WISHYUYE
+</p>
           </div>
           <div style={{ background: '#111', padding: '30px', borderRadius: '15px', border: '1px solid #333', display: 'inline-block' }}>
             <input value={myName} onChange={e => setMyName(e.target.value)} placeholder="Full Name" style={{padding:'10px', width:'200px'}} /><br/><br/>
@@ -137,7 +142,42 @@ function App() {
               <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'5px'}}>{localQRs.map((q, i) => <input key={i} value={q} onChange={e => {let n=[...localQRs]; n[i]=e.target.value; setLocalQRs(n)}} placeholder="QR URL" style={{fontSize:'0.6rem', background: '#222', color: 'gold'}} />)}</div>
               <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{background:'green', color:'white', width:'100%', padding:'5px', marginTop:'5px'}}>SAVE QRS</button>
               
-              <div style={{maxHeight:'120px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px', border:'1px solid #333'}}><div style={{fontSize:'0.6rem', color:'gold', textAlign:'center'}}>LOBBY</div>{gameState.allViewers.map(v => <div key={v.id} style={{fontSize:'0.8rem', padding:'5px', borderBottom:'1px solid #222', display:'flex', justifyContent:'space-between', alignItems:'center'}}><span>{v.name}</span><div><button onClick={() => socket.emit('refAssignRole', {userId: v.id, role:'team1'})} style={{background:'lime', marginRight:'5px'}}>T1</button><button onClick={() => socket.emit('refAssignRole', {userId: v.id, role:'team2'})} style={{background:'red', color:'white'}}>T2</button></div></div>)}</div>
+              <div style={{maxHeight:'120px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px', border:'1px solid #333'}}>
+                <div style={{fontSize:'0.6rem', color:'gold', textAlign:'center'}}>LOBBY</div>
+
+                {/* === START OF REFEREE LOBBY SEARCH UPGRADE === */}
+                <input
+                  value={lobbySearch}
+                  onChange={e => setLobbySearch(e.target.value)}
+                  placeholder="🔍 Search user by name..."
+                  style={{
+                    width: '95%',
+                    padding: '5px',
+                    margin: '5px auto',
+                    display: 'block',
+                    background: '#111',
+                    color: 'white',
+                    border: '1px solid gold',
+                    fontSize: '0.75rem'
+                  }}
+                />
+                {(() => {
+                  const filteredViewers = gameState.allViewers.filter(
+                    v => v.name && v.name.toLowerCase().includes(lobbySearch.toLowerCase())
+                  );
+                  return filteredViewers.map(v => (
+                    <div key={v.id} style={{fontSize:'0.8rem', padding:'5px', borderBottom:'1px solid #222', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                      <span>{v.name}</span>
+                      <div>
+                        <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role:'team1'})} style={{background:'lime', marginRight:'5px'}}>T1</button>
+                        <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role:'team2'})} style={{background:'red', color:'white'}}>T2</button>
+                      </div>
+                    </div>
+                  ));
+                })()}
+                {/* === END OF REFEREE LOBBY SEARCH UPGRADE === */}
+
+              </div>
               
               {/* REF TACTICAL MONITOR */}
               {gameState.currentTurn === "FINISHED" && (
@@ -187,3 +227,4 @@ function App() {
   );
 }
 export default App;
+
