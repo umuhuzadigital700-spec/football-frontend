@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 
+// Import the new voting components you created
+import RefereeDashboard from './RefereeDashboard';
+import FanVotingStage from './FanVotingStage';
+
 const socket = io('https://football-backend-ykso.onrender.com');
 
 function App() {
@@ -103,8 +107,7 @@ function App() {
           <h1 style={{color: 'gold'}}>🏟️ RUHAGO N'INSHUTI ARENA</h1>
           <div style={{ background: '#111', padding: '20px', borderRadius: '15px', border: '1px solid #444', maxWidth: '90%', width: '600px', margin: '0 auto 20px auto', textAlign: 'left', fontSize: '0.85rem', maxHeight: '350px', overflowY: 'auto' }}>
             <h3 style={{ color: 'red', marginTop: 0, textAlign: 'center' }}>ITANGAZO RY'INGENZI (Warning Notice).</h3>
-            <p>KUGIRANGO TUTARENGA KUMATEGEKO YOSE  AFITE AHO AHURIYE N'ICURUZWA RYA SERVICES IZO ARI ZO ZOSE, BIKOREWE ONLINE BY INTERNET. Mbere yo gukora ubwishyu ubwo ari bwo bwose kugirango ubone uko winjira, banza some unasobanukirwe: Iki gikoresho si urubuga rwo gutega cyangwa gukina urusimbi (Nyiri rubuga afite uburenganzira busesuye bwo gushyiraho ibihembo bigenewe bamwe mubakoresheje iki gikoresho). (NUBWO AMAFARANGA AGURWA TIKE YO KWINJIRA, AZIFASHISHWA MUGUSHYIGIKIRA ABANTU BAFITE IMPANO ZIFITE AHO ZIHURIRA NA RUHAGO, UGURA ITIKE WESE AGOMBA KWEMERA KO NTAWUNDI MUNTU CYANGWA URWEGO RWIGENGA CYANGWA RWA RETA IYO ARIYO YOSE BAGOMBA GUSHYIRAHO ITEGEKO RY’IGENAMIGAMBI CYANGWA INGENGABIHE Y’IBIKORWA BIGENDANYE NO KUZAMURA IZO MPANO HIFASHISHIJWE AYO MAFARANGA MUGIHE NYIRIGIKORESHO ATABYEMEJE, URETSE GUSA IMISORO). nta gihe ntarengwa uwishyuye cyangwa undi wese yemerewe gushyiriraho nyirigikoresho ngo abone uburenganzira bwo kurushanwa. Igihe cyo kurushanwa cyaburi muntu wishyuye kijyenwa na nyigikoresho gusa, bigendanye n’ibyihutirwa mumboni za nyigikoresho. Iki gikoresho, Gishobora nogukoreshwa nk'igikoresho cy'imyidagaduro ishingiye ku bunararibonye cyangwa ubusesengunzi bwite bw’urushanwa, kigamije Ishimisha .(ariko gikoreshwa mumasaha yajyenwe na nyiracyo gusa). Uyu mukino ukora gusa iyo ufite smart fone cyangwa ibindi bikoresho bifite ubushobozi bwayo cyangwa burenze hamwe na connection ya enternet. Ugenewe gusa abantu bafite imyaka 18 kuzamura. Gukomeza winjira, uba wemeye ko wujuje imyaka yavuzwe☝️. Amafaranga 300 cyangwa 2000 Y'Urwanda gusa niyo yishyurwa.⚠️ ayishyuwe ntasubizwa inyuma mu bihe byose. Iyo wishyuye kugira ngo ubashe gukoresha uyu mukino, wemera ko udafite uburenganzira bwo gutegeka, kugenzura uburyo uyu mukino ukoreshwa. Twakira ibitekerezo n'inama mutanga, ariko ibyemezo byose bijyanye n'imikorere bifatwa natwe ubwacu. Ntabwo dukusanya, tubika cyangwa dutunganya amakuru ayo ari yo yose azwi nk'amakuru bwite (personal data). Niba wemeza neza ko wasomye kandi wumvise neza ibisabwa ukaba ubyujuje, ishyura na momo pay (*182*8*1*1934816*300*PIN#). KWINJIRA: MURI BOX YA TDX-ID ANDIKAMO IMIBARE 11, WAHAWE MURI SMS YEMEZAKO WISHYUYE
-</p>
+            <p>KUGIRANGO TUTARENGA KUMATEGEKO YOSE  AFITE AHO AHURIYE N'ICURUZWA RYA SERVICES IZO ARI ZO ZOSE, BIKOREWE ONLINE BY INTERNET. Mbere yo gukora ubwishyu ubwo ari bwo bwose kugirango ubone uko winjira, banza some unasobanukirwe: Iki gikoresho si urubuga rwo gutega cyangwa gukina urusimbi (Nyiri rubuga afite uburenganzira busesuye bwo gushyiraho ibihembo bigenewe bamwe mubakoresheje iki gikoresho). (NUBWO AMAFARANGA AGURWA TIKE YO KWINJIRA, AZIFASHISHWA MUGUSHYIGIKIRA ABANTU BAFITE IMPANO ZIFITE AHO ZIHURIRA NA RUHAGO, UGURA ITIKE WESE AGOMBA KWEMERA KO NTAWUNDI MUNTU CYANGWA URWEGO RWIGENGA CYANGWA RWA RETA IYO ARIYO YOSE BAGOMBA GUSHYIRAHO ITEGEKO RY’IGENAMIGAMBI CYANGWA INGENGABIHE Y’IBIKORWA BIGENDANYE NO KUZAMURA IZO MPANO HIFASHISHIJWE AYO MAFARANGA MUGIHE NYIRIGIKORESHO ATABYEMEJE, URETSE GUSA IMISORO). nta gihe ntarengwa uwishyuye cyangwa undi wese yemerewe gushyiriraho nyirigikoresho ngo abone uburenganzira bwo kurushanwa. Igihe cyo kurushanwa cyaburi muntu wishyuye kijyenwa na nyigikoresho gusa, bigendanye n’ibyihutirwa mumboni za nyigikoresho. Iki gikoresho, Gishobora nogukoreshwa nk'igikoresho cy'imyidagaduro ishingiye ku bunararibonye cyangwa ubusesengunzi bwite bw’urushanwa, kigamije Ishimisha .(ariko gikoreshwa mumasaha yajyenwe na nyiracyo gusa). Uyu mukino ukora gusa iyo ufite smart fone cyangwa ibindi bikoresho bifite ubushobozi bwayo cyangwa burenze hamwe na connection ya enternet. Ugenewe gusa abantu bafite imyaka 18 kuzamura. Gukomeza winjira, uba wemeye ko wujuje imyaka yavuzwe☝️. Amafaranga 300 cyangwa 2000 Y'Urwanda gusa niyo yishyurwa.⚠️ ayishyuwe ntasubizwa inyuma mu bihe byose. Iyo wishyuye kugira ngo ubashe gukoresha uyu mukino, wemera ko udafite uburenganzira bwo gutegeka, kugenzura uburyo uyu mukino ukoreshwa. Twakira ibitekerezo n'inama mutanga, ariko ibyemezo byose bijyanye n'imikorere bifatwa natwe ubwacu. Ntabwo dukusanya, tubika cyangwa dutunganya amakuru ayo ari yo yose azwi nk'amakuru bwite (personal data). Niba wemeza neza ko wasomye kandi wumvise neza ibisabwa ukaba ubyujuje, ishyura na momo pay (*182*8*1*1934816*300*PIN#). KWINJIRA: MURI BOX YA TDX-ID ANDIKAMO IMIBARE 11, WAHAWE MURI SMS YEMEZAKO WISHYUYE</p>
           </div>
           <div style={{ background: '#111', padding: '30px', borderRadius: '15px', border: '1px solid #333', display: 'inline-block' }}>
             <input value={myName} onChange={e => setMyName(e.target.value)} placeholder="Full Name" style={{padding:'10px', width:'200px'}} /><br/><br/>
@@ -207,24 +210,4 @@ function App() {
                 <div key={gameState.availableCards.length} style={{flex: 2.5, display:'flex', flexWrap:'wrap', gap:'5px', maxHeight:'50vh', overflowY:'auto'}}>{gameState.availableCards.map(c => <div key={c.id} onClick={() => !isRef && socket.emit('playerPickCard', c.id)} style={{border:'1px solid #444', padding:'5px', width:'75px', background:'#111', fontSize:'0.7rem', cursor: (!isRef && myUser?.txId === gameState[`${gameState.currentTurn}Player`]?.txId) ? 'pointer' : 'not-allowed', opacity: (!isRef && myUser?.txId === gameState[`${gameState.currentTurn}Player`]?.txId) ? 1 : 0.4}}><b>{c.name}</b><br/><span style={{color:'gold'}}>{c.pos}</span><br/><span style={{color:'#0f0'}}>{c.points} pts</span></div>)}</div>
                 <div style={{flex:1.5, fontSize:'0.7rem'}}>
                   <div style={{background:'#111', padding:'5px', border:'1px solid #0f0', marginBottom:'5px'}}><b style={{color:'#0f0'}}>T1 ({gameState.team1Picks.length}/11)</b><br/>{calcPts(gameState.team1Picks)} pts<div style={{marginTop:'5px', color:'#aaa'}}>{gameState.team1Picks.map((p,i) => <div key={i}>• {p.name}</div>)}</div></div>
-                  <div style={{background:'#111', padding:'5px', border:'1px solid #f44'}}><b style={{color:'#f44'}}>T2 ({gameState.team2Picks.length}/11)</b><br/>{calcPts(gameState.team2Picks)} pts<div style={{marginTop:'5px', color:'#aaa'}}>{gameState.team2Picks.map((p,i) => <div key={i}>• {p.name}</div>)}</div></div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {gameState.gameStarted && myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`].length === 11 && (
-             <div style={{marginTop:'20px', textAlign:'center'}}>
-                <h2 style={{color:'gold', margin:'0 0 10px 0'}}>TACTICS {gameState.matchLocked && "(LOCKED)"}</h2>
-                <select value={gameState[`${myUser.role}Formation`]} onChange={(e) => socket.emit('playerSetFormation', e.target.value)} disabled={gameState.matchLocked} style={{padding:'10px', background:'#222', color:'gold', border:'1px solid gold', marginBottom:'10px', width:'150px'}}><option value="4-4-2">4-4-2</option><option value="4-3-3">4-3-3</option><option value="4-2-3-1">4-2-3-1</option><option value="3-5-2">3-5-2</option><option value="5-4-1">5-4-1</option></select>
-                <TacticalPitch teamKey={myUser.role} canEdit={!gameState.matchLocked} />
-                {activeSlot !== null && !gameState.matchLocked && (<div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.95)', zIndex:1000, padding:'20px', overflowY:'auto'}}><h3 style={{color:'gold'}}>Assign Player</h3><div style={{display:'flex', flexWrap:'wrap', gap:'8px', justifyContent:'center'}}>{gameState[`${myUser.role}Picks`].map(p => <button key={p.id} onClick={() => {socket.emit('playerSetPosition', {slotIndex:activeSlot, cardId:p.id}); setActiveSlot(null);}} style={{padding:'12px', background:'#222', color:'white', border:'1px solid gold'}}>{p.name}</button>)}</div><button onClick={() => setActiveSlot(null)} style={{marginTop:'25px', padding:'10px 40px', background:'red', color:'white', border:'none'}}>CANCEL</button></div>)}
-             </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-export default App;
-
+                  <div style={{background:'#111', padding:'5px', border:'1px solid #f44'}}><b style={{color:'#f
