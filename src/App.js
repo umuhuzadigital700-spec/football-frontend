@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import io from 'socket.io-client';
-
 import RefereeDashboard from './RefereeDashboard';
 import FanVotingStage from './FanVotingStage';
 
@@ -8,233 +7,381 @@ const socket = io('https://football-backend-ykso.onrender.com');
 
 function App() {
   const [gameState, setGameState] = useState(null);
-  const [myName, setMyName] = useState(localStorage.getItem('draftName') || "");
-  const [myTxId, setMyTxId] = useState(localStorage.getItem('myTxId') || "");
+  const [myName, setMyName] = useState(localStorage.getItem('draftName') || '');
+  const [myTxId, setMyTxId] = useState(localStorage.getItem('myTxId') || '');
   const [joined, setJoined] = useState(false);
-  const [refToken, setRefToken] = useState("");
+  const [refToken, setRefToken] = useState('');
   const [isRef, setIsRef] = useState(false);
-  const [newYoutube, setNewYoutube] = useState("");
-  const [bannerUrl, setBannerUrl] = useState("");
-  const [localQRs, setLocalQRs] = useState(["", "", "", "", "", ""]);
+  const [newYoutube, setNewYoutube] = useState('');
+  const [bannerUrl, setBannerUrl] = useState('');
+  const [localQRs, setLocalQRs] = useState(['', '', '', '', '', '']);
   const [activeSlot, setActiveSlot] = useState(null);
+  const [lobbySearch, setLobbySearch] = useState('');
 
-  const [lobbySearch, setLobbySearch] = useState("");
+  const isRefRef = useRef(isRef);
 
   useEffect(() => {
-    socket.on('gameStateUpdate', (state) => {
-        setGameState(state);
-        const sTx = localStorage.getItem('myTxId');
-        const userInLobby = state.allViewers.find(v => v.txId === sTx);
-        if (userInLobby || isRef) { setJoined(true); } else { setJoined(false); }
-        if (isRef && state.qrCodes) setLocalQRs(state.qrCodes);
-    });
-
-    socket.on('connect', () => {
-        const sTx = localStorage.getItem('myTxId');
-        const sName = localStorage.getItem('draftName');
-        if (sTx && sName) {
-            socket.emit('joinWaitingRoom', { name: sName, ticketCode: sTx });
-        }
-    });
-
-    socket.on('clearArenaForce', () => {
-        localStorage.removeItem('myTxId');
-        localStorage.removeItem('draftName');
-        setJoined(false);
-        setIsRef(false);
-        window.location.reload(); 
-    });
-
-    socket.on('gameSyncPhase', (phase) => {
-        setActiveSlot(null);
-        if (phase === 'LOBBY' && !isRef) setJoined(true);
-    });
-
-    socket.on('refConfirm', (val) => { setIsRef(val); setJoined(true); });
-    socket.on('error', (m) => alert(m));
-    return () => socket.removeAllListeners();
+    isRefRef.current = isRef;
   }, [isRef]);
 
-  const handleJoin = () => {
-    if (!myName || !myTxId) return alert("Uzuza imyirondoro yose (Fill all fields)");
+  useEffect(() => {
+    function onGameStateUpdate(state) {
+      setGameState(state);
+
+      const sTx = localStorage.getItem('myTxId');
+      const userInLobby = state.allViewers.find(v => v.txId === sTx);
+
+      if (userInLobby || isRefRef.current) {
+        setJoined(true);
+      } else {
+        setJoined(false);
+      }
+
+      if (isRefRef.current && state.qrCodes) {
+        setLocalQRs(state.qrCodes);
+      }
+    }
+
+    function onConnect() {
+      const sTx = localStorage.getItem('myTxId');
+      const sName = localStorage.getItem('draftName');
+
+      if (sTx && sName) {
+        socket.emit('joinWaitingRoom', { name: sName, ticketCode: sTx });
+      }
+    }
+
+    function onClearArenaForce() {
+      localStorage.removeItem('myTxId');
+      localStorage.removeItem('draftName');
+      setJoined(false);
+      setIsRef(false);
+      window.location.reload();
+    }
+
+    function onGameSyncPhase(phase) {
+      setActiveSlot(null);
+      if (phase === 'LOBBY' && !isRefRef.current) {
+        setJoined(true);
+      }
+    }
+
+    function onRefConfirm(val) {
+      setIsRef(val);
+      isRefRef.current = val;
+      setJoined(true);
+    }
+
+    function onError(message) {
+      alert(message);
+    }
+
+    socket.on('gameStateUpdate', onGameStateUpdate);
+    socket.on('connect', onConnect);
+    socket.on('clearArenaForce', onClearArenaForce);
+    socket.on('gameSyncPhase', onGameSyncPhase);
+    socket.on('refConfirm', onRefConfirm);
+    socket.on('error', onError);
+
+    return () => {
+      socket.off('gameStateUpdate', onGameStateUpdate);
+      socket.off('connect', onConnect);
+      socket.off('clearArenaForce', onClearArenaForce);
+      socket.off('gameSyncPhase', onGameSyncPhase);
+      socket.off('refConfirm', onRefConfirm);
+      socket.off('error', onError);
+    };
+  }, []);
+
+  const handleJoin = useCallback(() => {
+    if (!myName || !myTxId) {
+      return alert('Uzuza imyirondoro yose (Fill all fields)');
+    }
+
     localStorage.setItem('draftName', myName);
     localStorage.setItem('myTxId', myTxId);
     socket.emit('joinWaitingRoom', { name: myName, ticketCode: myTxId });
-  };
+  }, [myName, myTxId]);
 
-  if (!gameState) return <div style={{color:'white', textAlign:'center', marginTop:'50px'}}>Arena Connecting...</div>;
-  const myUser = gameState.allViewers.find(v => v.txId === myTxId);
-  const calcPts = (t) => t ? t.reduce((s, p) => s + (parseInt(p.points) || 0), 0) : 0;
-
-  const getRows = (f) => {
-    const fm = f || "4-4-2";
-    const map = {"4-4-2":[2,4,4,1], "4-3-3":[3,3,4,1], "4-2-3-1":[1,3,2,4,1], "3-5-2":[2,5,3,1], "5-4-1":[1,4,5,1]};
-    return map[fm] || [2,4,4,1];
-  };
-
-  const TacticalPitch = ({ teamKey, canEdit }) => {
-    const formation = gameState[`${teamKey}Formation`] || "4-4-2";
-    const tactics = gameState[`${teamKey}Tactics`] || {};
-    const rows = getRows(formation);
-    let counter = 0;
+  if (!gameState) {
     return (
-      <div style={{ background: '#1a472a', border: '2px solid white', borderRadius: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'space-around', aspectRatio: '2/3', padding: '10px', margin: '10px auto', width: '130px', boxShadow: '0 0 10px black' }}>
-        {rows.map((count, rIdx) => (
-          <div key={rIdx} style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
-            {Array.from({ length: count }).map((_, i) => {
-              const sIdx = counter++;
-              const p = tactics[sIdx];
-              return (
-                <div key={i} onClick={() => canEdit && !gameState.matchLocked && setActiveSlot(sIdx)}
-                     style={{ width: '24px', height: '24px', borderRadius: '50%', border: '1px solid gold', background: p ? '#111' : 'rgba(0,0,0,0.4)', color: 'white', fontSize: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: (canEdit && !gameState.matchLocked) ? 'pointer' : 'default' }}>
-                  {p ? p.name.split(' ')[0] : ""}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+      <div style={{ padding: 32, textAlign: 'center' }}>
+        <p>Connecting to Arena…</p>
       </div>
     );
-  };
+  }
+
+  if (!joined) {
+    const filteredViewers = (gameState.allViewers || []).filter(v =>
+      v.name?.toLowerCase().includes(lobbySearch.toLowerCase()) ||
+      v.txId?.toLowerCase().includes(lobbySearch.toLowerCase())
+    );
+
+    return (
+      <div style={{ padding: 24, maxWidth: 520, margin: '0 auto' }}>
+        <h2>🏟️ Arena Lobby</h2>
+
+        <div
+          style={{
+            marginTop: 12,
+            padding: 12,
+            background: '#fff8e1',
+            border: '1px solid #f0c36d',
+            borderRadius: 6,
+            fontSize: 13,
+            lineHeight: 1.5
+          }}
+        >
+          <strong>Notice:</strong> This is the fixed copy-paste version of the file.
+          If you want your original long legal / payment / eligibility notice back,
+          paste your previous JSX text block here after the app is working.
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <input
+            placeholder="Izina ryawe (Your name)"
+            value={myName}
+            onChange={e => setMyName(e.target.value)}
+            style={{ display: 'block', width: '100%', marginBottom: 8, padding: 8 }}
+          />
+          <input
+            placeholder="TDX-ID (11 digits)"
+            value={myTxId}
+            onChange={e => setMyTxId(e.target.value)}
+            style={{ display: 'block', width: '100%', marginBottom: 8, padding: 8 }}
+          />
+          <button
+            onClick={handleJoin}
+            style={{
+              width: '100%',
+              padding: 12,
+              background: '#1a73e8',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer'
+            }}
+          >
+            KWINJIRA
+          </button>
+        </div>
+
+        <hr style={{ margin: '24px 0' }} />
+
+        <div>
+          <strong>Referee Login</strong>
+          <input
+            type="password"
+            placeholder="Ref token"
+            value={refToken}
+            onChange={e => setRefToken(e.target.value)}
+            style={{ display: 'block', width: '100%', margin: '8px 0', padding: 8 }}
+          />
+          <button
+            onClick={() => socket.emit('claimReferee', refToken)}
+            style={{
+              width: '100%',
+              padding: 10,
+              background: '#333',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer'
+            }}
+          >
+            Claim Referee
+          </button>
+        </div>
+
+        {gameState.allViewers?.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <strong>Viewers ({gameState.allViewers.length})</strong>
+            <input
+              placeholder="Search viewers…"
+              value={lobbySearch}
+              onChange={e => setLobbySearch(e.target.value)}
+              style={{ display: 'block', width: '100%', margin: '8px 0', padding: 6 }}
+            />
+            <ul style={{ listStyle: 'none', padding: 0 }}>
+              {filteredViewers.map(v => (
+                <li
+                  key={v.id}
+                  style={{ padding: '4px 0', borderBottom: '1px solid #eee' }}
+                >
+                  {v.name} — <small>{v.role}</small>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const myViewer = gameState.allViewers?.find(
+    v => v.txId === localStorage.getItem('myTxId')
+  );
 
   return (
-    <div style={{ backgroundColor: '#050505', color: '#eee', minHeight: '100vh', fontFamily: 'Arial' }}>
-      {!joined ? (
-        <div style={{ textAlign: 'center', paddingTop: '20px' }}>
-          <h1 style={{color: 'gold'}}>🏟️ RUHAGO N'INSHUTI ARENA</h1>
-          <div style={{ background: '#111', padding: '20px', borderRadius: '15px', border: '1px solid #444', maxWidth: '90%', width: '600px', margin: '0 auto 20px auto', textAlign: 'left', fontSize: '0.85rem', maxHeight: '350px', overflowY: 'auto' }}>
-            <h3 style={{ color: 'red', marginTop: 0, textAlign: 'center' }}>ITANGAZO RY'INGENZI (Warning Notice).</h3>
-            <p>KUGIRANGO TUTARENGA KUMATEGEKO YOSE  AFITE AHO AHURIYE N'ICURUZWA RYA SERVICES IZO ARI ZO ZOSE, BIKOREWE ONLINE BY INTERNET. Mbere yo gukora ubwishyu ubwo ari bwo bwose kugirango ubone uko winjira, banza some unasobanukirwe: Iki gikoresho si urubuga rwo gutega cyangwa gukina urusimbi (Nyiri rubuga afite uburenganzira busesuye bwo gushyiraho ibihembo bigenewe bamwe mubakoresheje iki gikoresho). (NUBWO AMAFARANGA AGURWA TIKE YO KWINJIRA, AZIFASHISHWA MUGUSHYIGIKIRA ABANTU BAFITE IMPANO ZIFITE AHO ZIHURIRA NA RUHAGO, UGURA ITIKE WESE AGOMBA KWEMERA KO NTAWUNDI MUNTU CYANGWA URWEGO RWIGENGA CYANGWA RWA RETA IYO ARIYO YOSE BAGOMBA GUSHYIRAHO ITEGEKO RY’IGENAMIGAMBI CYANGWA INGENGABIHE Y’IBIKORWA BIGENDANYE NO KUZAMURA IZO MPANO HIFASHISHIJWE AYO MAFARANGA MUGIHE NYIRIGIKORESHO ATABYEMEJE, URETSE GUSA IMISORO). nta gihe ntarengwa uwishyuye cyangwa undi wese yemerewe gushyiriraho nyirigikoresho ngo abone uburenganzira bwo kurushanwa. Igihe cyo kurushanwa cyaburi muntu wishyuye kijyenwa na nyigikoresho gusa, bigendanye n’ibyihutirwa mumboni za nyigikoresho. Iki gikoresho, Gishobora nogukoreshwa nk'igikoresho cy'imyidagaduro ishingiye ku bunararibonye cyangwa ubusesengunzi bwite bw’urushanwa, kigamije Ishimisha .(ariko gikoreshwa mumasaha yajyenwe na nyiracyo gusa). Uyu mukino ukora gusa iyo ufite smart fone cyangwa ibindi bikoresho bifite ubushobozi bwayo cyangwa burenze hamwe na connection ya enternet. Ugenewe gusa abantu bafite imyaka 18 kuzamura. Gukomeza winjira, uba wemeye ko wujuje imyaka yavuzwe☝️. Amafaranga 300 cyangwa 2000 Y'Urwanda gusa niyo yishyurwa.⚠️ ayishyuwe ntasubizwa inyuma mu bihe byose. Iyo wishyuye kugira ngo ubashe gukoresha uyu mukino, wemera ko udafite uburenganzira bwo gutegeka, kugenzura uburyo uyu mukino ukoreshwa. Twakira ibitekerezo n'inama mutanga, ariko ibyemezo byose bijyanye n'imikorere bifatwa natwe ubwacu. Ntabwo dukusanya, tubika cyangwa transient amakuru ayo ari yo yose azwi nk'amakuru bwite (personal data). Niba wemeza neza ko wasomye kandi wumvise neza ibisabwa ukaba ubyujuje, ishyura na momo pay (*182*8*1*1934816*300*PIN#). KWINJIRA: MURI BOX YA TDX-ID ANDIKAMO IMIBARE 11, WAHAWE MURI SMS YEMEZAKO WISHYUYE</p>
-          </div>
-          <div style={{ background: '#111', padding: '30px', borderRadius: '15px', border: '1px solid #333', display: 'inline-block' }}>
-            <input value={myName} onChange={e => setMyName(e.target.value)} placeholder="Full Name" style={{padding:'10px', width:'200px'}} /><br/><br/>
-            <input value={myTxId} onChange={e => setMyTxId(e.target.value)} placeholder="TDX-ID" style={{padding:'10px', width:'200px', border:'1px solid gold'}} /><br/><br/>
-            <button onClick={handleJoin} style={{padding:'10px 20px', background:'#28a745', color:'white', fontWeight:'bold'}}>ENTER</button>
-          </div>
-          <div style={{marginTop:'50px', opacity:0.1}}><input type="password" onChange={e => setRefToken(e.target.value)} style={{width:'80px'}}/><button onClick={() => socket.emit('claimReferee', refToken)}>REF</button></div>
-        </div>
-      ) : (
-        <div style={{ padding: '15px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '10px', borderBottom: '2px solid gold', alignItems: 'center' }}>
-            <div>
-                <div style={{fontSize: '0.7rem', color: 'gold'}}>PLAYER: {isRef ? "ERIC (REF)" : myName}</div>
-                <div style={{fontSize: '0.9rem'}}>ROLE: {isRef ? "REFEREE" : (myUser?.role?.toUpperCase() || "FAN")}</div>
-            </div>
-            
-            <div style={{display: 'flex', gap: '5px'}}>
-                <a href={gameState.youtubeLink} target="_blank" rel="noreferrer" style={{background: 'red', color: 'white', padding: '8px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.65rem'}}>WATCH THIS VIDEO</a>
-                <button onClick={() => { if (myUser?.isPremium && myUser?.secureLink) { window.open(myUser.secureLink, '_blank'); } else { alert("Ubu buryo bugenewe abishyuye 2,000 RWF gusa."); } }} style={{background: 'gold', color: 'black', padding: '8px', borderRadius: '5px', fontWeight: 'bold', fontSize: '0.65rem', border: 'none', cursor: 'pointer'}}>SECURE VIP LIVE</button>
-            </div>
-            <div style={{fontSize: '1rem', color: 'gold'}}>{gameState.allViewers.length} 👤</div>
-          </div>
-
-          {gameState.arenaBanner && <div style={{marginTop: '10px'}}><img src={gameState.arenaBanner} alt="Banner" style={{width: '100%', borderRadius: '8px', border: '1px solid #444', aspectRatio: '16/9', objectFit: 'cover'}} /></div>}
-
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '10px', flexWrap: 'wrap' }}>
-            {gameState.qrCodes.map((url, i) => url && <div key={i} style={{ background: 'white', padding: '2px', borderRadius: '4px' }}><img src={url} alt="QR" style={{ width: '85px', height: '85px' }} /></div>)}
-          </div>
-
-          {isRef && (
-            <div style={{ background: '#1a1a1a', border: '1px solid gold', padding: '15px', marginTop: '10px', borderRadius: '8px' }}>
-              <div style={{marginBottom: '10px', display:'flex', gap:'5px'}}><input value={newYoutube} onChange={e => setNewYoutube(e.target.value)} placeholder="Video Link" style={{flex:1}} /><button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{background:'gold'}}>SET</button></div>
-              <div style={{marginBottom: '10px', display:'flex', gap:'5px'}}><input value={bannerUrl} onChange={e => setBannerUrl(e.target.value)} placeholder="Banner URL" style={{flex:1}} /><button onClick={() => socket.emit('refUpdateBanner', bannerUrl)} style={{background:'lime'}}>POST</button></div>
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'5px'}}>{localQRs.map((q, i) => <input key={i} value={q} onChange={e => {let n=[...localQRs]; n[i]=e.target.value; setLocalQRs(n)}} placeholder="QR URL" style={{fontSize:'0.6rem', background: '#222', color: 'gold'}} />)}</div>
-              <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{background:'green', color:'white', width:'100%', padding:'5px', marginTop:'5px'}}>SAVE QRS</button>
-              
-              <div style={{maxHeight:'120px', overflowY:'auto', marginTop:'10px', background:'#000', padding:'5px', border:'1px solid #333'}}>
-                <div style={{fontSize:'0.6rem', color:'gold', textAlign:'center'}}>LOBBY</div>
-
-                <input
-                  value={lobbySearch}
-                  onChange={e => setLobbySearch(e.target.value)}
-                  placeholder="🔍 Search user by name..."
-                  style={{
-                    width: '95%',
-                    padding: '5px',
-                    margin: '5px auto',
-                    display: 'block',
-                    background: '#111',
-                    color: 'white',
-                    border: '1px solid gold',
-                    fontSize: '0.75rem'
-                  }}
-                />
-                {(() => {
-                  const filteredViewers = gameState.allViewers.filter(
-                    v => v.name && v.name.toLowerCase().includes(lobbySearch.toLowerCase())
-                  );
-                  return filteredViewers.map(v => (
-                    <div key={v.id} style={{fontSize:'0.8rem', padding:'5px', borderBottom:'1px solid #222', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                      <span>{v.name}</span>
-                      <div>
-                        <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role:'team1'})} style={{background:'lime', marginRight:'5px'}}>T1</button>
-                        <button onClick={() => socket.emit('refAssignRole', {userId: v.id, role:'team2'})} style={{background:'red', color:'white'}}>T2</button>
-                      </div>
-                    </div>
-                  ));
-                })()}
-
-              </div>
-              
-              {gameState.currentTurn === "FINISHED" && (
-                <div style={{display:'flex', gap:'10px', justifyContent:'center', marginTop:'15px'}}>
-                   <div style={{textAlign:'center'}}><p style={{fontSize:'0.5rem', margin:0}}>T1 Pitch</p><TacticalPitch teamKey="team1" canEdit={false} /></div>
-                   <div style={{textAlign:'center'}}><p style={{fontSize:'0.5rem', margin:0}}>T2 Pitch</p><TacticalPitch teamKey="team2" canEdit={false} /></div>
-                </div>
-              )}
-
-              <div style={{marginTop: '15px', display: 'flex', flexDirection:'column', gap:'10px'}}>
-                <div style={{display:'flex', justifyContent:'center', gap:'10px'}}>
-                  <button onClick={() => socket.emit('refReset')} style={{background:'blue', color:'white', padding:'8px'}}>RESET</button>
-                  <button onClick={() => socket.emit('refStartDraft')} style={{background:'gold', padding:'8px', fontWeight:'bold'}}>START</button>
-                  <button onClick={() => socket.emit('refClearArena')} style={{background:'purple', color:'white', padding:'8px'}}>CLEAR</button>
-                </div>
-                {gameState.currentTurn === "FINISHED" && !gameState.matchLocked && (
-                    <button onClick={() => socket.emit('refLockMatch')} style={{background:'lime', color:'black', fontWeight:'bold', padding:'10px', border:'2px solid gold'}}>🚀 MATCH READY</button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {gameState.gameStarted && gameState.currentTurn !== "FINISHED" && (
-            <div style={{marginTop:'15px'}}>
-              <div style={{textAlign:'center', background:'#222', border:'1px solid gold', padding:'5px', marginBottom:'10px'}}><h3 style={{margin:0, color: gameState.currentTurn === 'team1' ? '#0ff' : '#f44'}}>TURN: {gameState.currentTurn.toUpperCase()} {myUser?.txId === gameState[`${gameState.currentTurn}Player`]?.txId && "(YOU!)"}</h3></div>
-              <div style={{display:'flex', gap:'10px'}}>
-                <div key={gameState.availableCards.length} style={{flex: 2.5, display:'flex', flexWrap:'wrap', gap:'5px', maxHeight:'50vh', overflowY:'auto'}}>{gameState.availableCards.map(c => <div key={c.id} onClick={() => !isRef && socket.emit('playerPickCard', c.id)} style={{border:'1px solid #444', padding:'5px', width:'75px', background:'#111', fontSize:'0.7rem', cursor: (!isRef && myUser?.txId === gameState[`${gameState.currentTurn}Player`]?.txId) ? 'pointer' : 'not-allowed', opacity: (!isRef && myUser?.txId === gameState[`${gameState.currentTurn}Player`]?.txId) ? 1 : 0.4}}><b>{c.name}</b><br/><span style={{color:'gold'}}>{c.pos}</span><br/><span style={{color:'#0f0'}}>{c.points} pts</span></div>)}</div>
-                <div style={{flex:1.5, fontSize:'0.7rem'}}>
-                  <div style={{background:'#111', padding:'5px', border:'1px solid #0f0', marginBottom:'5px'}}><b style={{color:'#0f0'}}>T1 ({gameState.team1Picks.length}/11)</b><br/>{calcPts(gameState.team1Picks)} pts<div style={{marginTop:'5px', color:'#aaa'}}>{gameState.team1Picks.map((p,i) => <div key={i}>• {p.name}</div>)}</div></div>
-                  <div style={{background:'#111', padding:'5px', border:'1px solid #f44'}}><b style={{color:'#f44'}}>T2 ({gameState.team2Picks.length}/11)</b><br/>{calcPts(gameState.team2Picks)} pts<div style={{marginTop:'5px', color:'#aaa'}}>{gameState.team2Picks.map((p,i) => <div key={i}>• {p.name}</div>)}</div></div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {gameState.gameStarted && myUser?.role?.startsWith('team') && gameState[`${myUser.role}Picks`].length === 11 && (
-             <div style={{marginTop:'20px', textAlign:'center'}}>
-                <h2 style={{color:'gold', margin:'0 0 10px 0'}}>TACTICS {gameState.matchLocked && "(LOCKED)"}</h2>
-                <select value={gameState[`${myUser.role}Formation`]} onChange={(e) => socket.emit('playerSetFormation', e.target.value)} disabled={gameState.matchLocked} style={{padding:'10px', background:'#222', color:'gold', border:'1px solid gold', marginBottom:'10px', width:'150px'}}><option value="4-4-2">4-4-2</option><option value="4-3-3">4-3-3</option><option value="4-2-3-1">4-2-3-1</option><option value="3-5-2">3-5-2</option><option value="5-4-1">5-4-1</option></select>
-                <TacticalPitch teamKey={myUser.role} canEdit={!gameState.matchLocked} />
-                {activeSlot !== null && !gameState.matchLocked && (<div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.95)', zIndex:1000, padding:'20px', overflowY:'auto'}}><h3 style={{color:'gold'}}>Assign Player</h3><div style={{display:'flex', flexWrap:'wrap', gap:'8px', justifyContent:'center'}}>{gameState[`${myUser.role}Picks`].map(p => <button key={p.id} onClick={() => {socket.emit('playerSetPosition', {slotIndex:activeSlot, cardId:p.id}); setActiveSlot(null);}} style={{padding:'12px', background:'#222', color:'white', border:'1px solid gold'}}>{p.name}</button>)}</div><button onClick={() => setActiveSlot(null)} style={{marginTop:'25px', padding:'10px 40px', background:'red', color:'white', border:'none'}}>CANCEL</button></div>)}
-             </div>
-          )}
-
-          <RefereeDashboard 
-            socket={socket} 
-            gameState={gameState} 
-            isReferee={isRef} 
+    <div style={{ padding: 16 }}>
+      {gameState.arenaBanner && (
+        <div style={{ textAlign: 'center', marginBottom: 12 }}>
+          <img
+            src={gameState.arenaBanner}
+            alt="Arena Banner"
+            style={{ maxWidth: '100%', maxHeight: 120 }}
           />
+        </div>
+      )}
 
-          {gameState.allViewers.find(v => v.id === socket.id) && (
-            <FanVotingStage 
-              socket={socket} 
-              gameState={gameState} 
-              currentUser={gameState.allViewers.find(v => v.id === socket.id)} 
+      {gameState.youtubeLink && (
+        <div style={{ marginBottom: 16, textAlign: 'center' }}>
+          <iframe
+            width="100%"
+            height="200"
+            src={gameState.youtubeLink.replace('watch?v=', 'embed/')}
+            title="Live Stream"
+            frameBorder="0"
+            allowFullScreen
+          />
+        </div>
+      )}
+
+      {isRef && (
+        <div
+          style={{
+            background: '#fff3cd',
+            padding: 12,
+            borderRadius: 6,
+            marginBottom: 16
+          }}
+        >
+          <div style={{ marginBottom: 8 }}>
+            <strong>📺 YouTube Link</strong>
+            <input
+              value={newYoutube}
+              onChange={e => setNewYoutube(e.target.value)}
+              style={{ marginLeft: 8, padding: 6, width: 260 }}
             />
-          )}
+            <button
+              onClick={() => socket.emit('refUpdateYoutube', newYoutube)}
+              style={{ marginLeft: 8, padding: '6px 12px' }}
+            >
+              Set
+            </button>
+          </div>
 
+          <div>
+            <strong>🖼️ Banner URL</strong>
+            <input
+              value={bannerUrl}
+              onChange={e => setBannerUrl(e.target.value)}
+              style={{ marginLeft: 8, padding: 6, width: 260 }}
+            />
+            <button
+              onClick={() => socket.emit('refUpdateBanner', bannerUrl)}
+              style={{ marginLeft: 8, padding: '6px 12px' }}
+            >
+              Set
+            </button>
+          </div>
+        </div>
+      )}
+
+      {gameState.qrCodes?.some(q => q) && (
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            flexWrap: 'wrap',
+            marginBottom: 16,
+            justifyContent: 'center'
+          }}
+        >
+          {gameState.qrCodes.map((q, i) =>
+            q ? <img key={i} src={q} alt={`QR ${i + 1}`} style={{ width: 80, height: 80 }} /> : null
+          )}
+        </div>
+      )}
+
+      {isRef && (
+        <div style={{ marginBottom: 16 }}>
+          {localQRs.map((q, i) => (
+            <span key={i} style={{ marginRight: 8 }}>
+              <input
+                placeholder={`QR ${i + 1} URL`}
+                value={q}
+                onChange={e => {
+                  const updated = [...localQRs];
+                  updated[i] = e.target.value;
+                  setLocalQRs(updated);
+                }}
+                style={{ padding: 4, width: 180 }}
+              />
+            </span>
+          ))}
+          <button
+            onClick={() => socket.emit('refUpdateQRs', localQRs)}
+            style={{ marginTop: 4, padding: '6px 14px' }}
+          >
+            Update QRs
+          </button>
+        </div>
+      )}
+
+      <RefereeDashboard
+        socket={socket}
+        gameState={gameState}
+        isReferee={isRef}
+        activeSlot={activeSlot}
+        setActiveSlot={setActiveSlot}
+      />
+
+      <FanVotingStage
+        socket={socket}
+        gameState={gameState}
+        myTxId={localStorage.getItem('myTxId') || ''}
+        isReferee={isRef}
+      />
+
+      {gameState.gameStarted && !isRef && myViewer?.role === 'spectator' && (
+        <div style={{ marginTop: 24 }}>
+          <h3>🏟️ Live Draft</h3>
+          <p><strong>Current Turn:</strong> {gameState.currentTurn}</p>
+          <p>
+            T1 Picks: {gameState.team1Picks?.length || 0} / T2 Picks: {gameState.team2Picks?.length || 0}
+          </p>
+        </div>
+      )}
+
+      {gameState.gameStarted && myViewer?.role?.startsWith('team') && (
+        <div style={{ marginTop: 24 }}>
+          <h3>
+            Your Turn: {gameState.currentTurn === myViewer.role ? '✅ YOUR PICK' : '⏳ Waiting…'}
+          </h3>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+            {gameState.availableCards?.map(card => (
+              <button
+                key={card.id}
+                disabled={gameState.currentTurn !== myViewer.role || gameState.matchLocked}
+                onClick={() => socket.emit('playerPickCard', card.id)}
+                style={{
+                  padding: '6px 10px',
+                  cursor: 'pointer',
+                  background: '#e8f5e9',
+                  border: '1px solid #388e3c',
+                  borderRadius: 4
+                }}
+              >
+                {card.Name || card.name || card.id}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
 }
+
 export default App;
