@@ -23,7 +23,7 @@ function RefereeDashboard({ socket, gameState, isReferee, activeSlot, setActiveS
     }
 
     socket.on('refSaveLiveSession_ack', onSaveAck);
-    return () => socket.off('refSaveLiveSession_ack', onSaveAck);
+    return () => socket.off('refSaveLiveSession_ack');
   }, [socket]);
 
   if (!isReferee) return null;
