@@ -1,9 +1,70 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import io from 'socket.io-client';
+// REMOVED: import io from 'socket.io-client'; -> Vercel Backend architecture relies on HTTP architecture.
 import RefereeDashboard from './RefereeDashboard';
 import FanVotingStage from './FanVotingStage';
 
-const socket = io('https://football-backend-ykso.onrender.com');
+// MOCK SOCKET BRIDGE: Implements an identical schema mapping interface pointing to the serverless emulation pipeline
+const BACKEND_URL = "https://football-backend-ykso.onrender.com"; // Adjust to your deployed backend url if needed
+
+const socket = {
+  id: localStorage.getItem('myTxId') || 'client-fallback-id',
+  emit: async (event, dataPayload = {}) => {
+    // Normalizes variant tracking fields to pass cleanly through a single body structure matching backend listeners
+    const payload = {
+      event,
+      socketId: localStorage.getItem('myTxId') || 'client-fallback-id',
+      token: typeof dataPayload === 'string' ? dataPayload : dataPayload.token,
+      data: dataPayload,
+      txId: dataPayload.txId || localStorage.getItem('myTxId'),
+      matchId: dataPayload.matchId,
+      coachVote: dataPayload.coachVote,
+      scores: dataPayload.scores,
+      matchType: dataPayload.matchType,
+      newStatus: dataPayload.newStatus,
+      cardId: typeof dataPayload === 'string' ? dataPayload : dataPayload.cardId,
+      slotIndex: dataPayload,
+      formation: typeof dataPayload === 'string' ? dataPayload : dataPayload.formation,
+      link: typeof dataPayload === 'string' ? dataPayload : dataPayload.link,
+      qrs: Array.isArray(dataPayload) ? dataPayload : dataPayload.qrs
+    };
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/socket-emulation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const resData = await res.json();
+      
+      // Immediate execution cycle block to process individual event handler updates
+      if (resData.emit && resData.emit.length > 0) {
+        resData.emit.forEach(emitted => {
+          if (window.__socketListeners && window.__socketListeners[emitted.event]) {
+            window.__socketListeners[emitted.event](emitted.data);
+          }
+        });
+      }
+      if (resData.broadcast && window.__socketListeners && window.__socketListeners['gameStateUpdate']) {
+        window.__socketListeners['gameStateUpdate'](resData.broadcast);
+      }
+      if (resData.phaseSync && window.__socketListeners && window.__socketListeners['gameSyncPhase']) {
+        window.__socketListeners['gameSyncPhase'](resData.phaseSync);
+      }
+      if (resData.forceClear && window.__socketListeners && window.__socketListeners['clearArenaForce']) {
+        window.__socketListeners['clearArenaForce']();
+      }
+    } catch (err) {
+      console.error("Transmission error:", err);
+    }
+  },
+  on: (event, callback) => {
+    if (!window.__socketListeners) window.__socketListeners = {};
+    window.__socketListeners[event] = callback;
+  },
+  off: (event) => {
+    if (window.__socketListeners) delete window.__socketListeners[event];
+  }
+};
 
 function App() {
   const [gameState, setGameState] = useState(null);
@@ -83,13 +144,30 @@ function App() {
     socket.on('refConfirm', onRefConfirm);
     socket.on('error', onError);
 
+    // Initial Engine Handshake execution logic
+    onConnect();
+
+    // Setup an internal light-weight interval engine to fetch server state consistently
+    const fetchInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/state`);
+        if (res.ok) {
+          const freshState = await res.json();
+          onGameStateUpdate(freshState);
+        }
+      } catch (e) {
+        console.warn("State polling failure:", e);
+      }
+    }, 3000);
+
     return () => {
-      socket.off('gameStateUpdate', onGameStateUpdate);
-      socket.off('connect', onConnect);
-      socket.off('clearArenaForce', onClearArenaForce);
-      socket.off('gameSyncPhase', onGameSyncPhase);
-      socket.off('refConfirm', onRefConfirm);
-      socket.off('error', onError);
+      clearInterval(fetchInterval);
+      socket.off('gameStateUpdate');
+      socket.off('connect');
+      socket.off('clearArenaForce');
+      socket.off('gameSyncPhase');
+      socket.off('refConfirm');
+      socket.off('error');
     };
   }, []);
 
