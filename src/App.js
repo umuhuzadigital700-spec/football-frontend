@@ -1,70 +1,17 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-// REMOVED: import io from 'socket.io-client'; -> Vercel Backend architecture relies on HTTP architecture.
+import io from 'socket.io-client';
 import RefereeDashboard from './RefereeDashboard';
 import FanVotingStage from './FanVotingStage';
 
-// MOCK SOCKET BRIDGE: Implements an identical schema mapping interface pointing to the serverless emulation pipeline
-const BACKEND_URL = "https://football-backend-ykso.onrender.com"; // Adjust to your deployed backend url if needed
+const BACKEND_URL = "https://football-backend-ykso.onrender.com";
 
-const socket = {
-  id: localStorage.getItem('myTxId') || 'client-fallback-id',
-  emit: async (event, dataPayload = {}) => {
-    // Normalizes variant tracking fields to pass cleanly through a single body structure matching backend listeners
-    const payload = {
-      event,
-      socketId: localStorage.getItem('myTxId') || 'client-fallback-id',
-      token: typeof dataPayload === 'string' ? dataPayload : dataPayload.token,
-      data: dataPayload,
-      txId: dataPayload.txId || localStorage.getItem('myTxId'),
-      matchId: dataPayload.matchId,
-      coachVote: dataPayload.coachVote,
-      scores: dataPayload.scores,
-      matchType: dataPayload.matchType,
-      newStatus: dataPayload.newStatus,
-      cardId: typeof dataPayload === 'string' ? dataPayload : dataPayload.cardId,
-      slotIndex: dataPayload,
-      formation: typeof dataPayload === 'string' ? dataPayload : dataPayload.formation,
-      link: typeof dataPayload === 'string' ? dataPayload : dataPayload.link,
-      qrs: Array.isArray(dataPayload) ? dataPayload : dataPayload.qrs
-    };
-
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/socket-emulation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const resData = await res.json();
-      
-      // Immediate execution cycle block to process individual event handler updates
-      if (resData.emit && resData.emit.length > 0) {
-        resData.emit.forEach(emitted => {
-          if (window.__socketListeners && window.__socketListeners[emitted.event]) {
-            window.__socketListeners[emitted.event](emitted.data);
-          }
-        });
-      }
-      if (resData.broadcast && window.__socketListeners && window.__socketListeners['gameStateUpdate']) {
-        window.__socketListeners['gameStateUpdate'](resData.broadcast);
-      }
-      if (resData.phaseSync && window.__socketListeners && window.__socketListeners['gameSyncPhase']) {
-        window.__socketListeners['gameSyncPhase'](resData.phaseSync);
-      }
-      if (resData.forceClear && window.__socketListeners && window.__socketListeners['clearArenaForce']) {
-        window.__socketListeners['clearArenaForce']();
-      }
-    } catch (err) {
-      console.error("Transmission error:", err);
-    }
-  },
-  on: (event, callback) => {
-    if (!window.__socketListeners) window.__socketListeners = {};
-    window.__socketListeners[event] = callback;
-  },
-  off: (event) => {
-    if (window.__socketListeners) delete window.__socketListeners[event];
-  }
-};
+// ── Real Socket.io connection (Render.com persistent server) ──────────────────
+const socket = io(BACKEND_URL, {
+  transports: ['websocket', 'polling'],
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000,
+});
 
 function App() {
   const [gameState, setGameState] = useState(null);
@@ -78,26 +25,24 @@ function App() {
   const [localQRs, setLocalQRs] = useState(['', '', '', '', '', '']);
   const [activeSlot, setActiveSlot] = useState(null);
   const [lobbySearch, setLobbySearch] = useState('');
+  // NEW Feature 5: Track room phase locally
+  const [roomPhase, setRoomPhase] = useState('LOBBY');
 
   const isRefRef = useRef(isRef);
-
-  useEffect(() => {
-    isRefRef.current = isRef;
-  }, [isRef]);
+  useEffect(() => { isRefRef.current = isRef; }, [isRef]);
 
   useEffect(() => {
     function onGameStateUpdate(state) {
       setGameState(state);
-
+      // Sync room phase
+      if (state.roomPhase) setRoomPhase(state.roomPhase);
       const sTx = localStorage.getItem('myTxId');
       const userInLobby = state.allViewers.find(v => v.txId === sTx);
-
       if (userInLobby || isRefRef.current) {
         setJoined(true);
       } else {
         setJoined(false);
       }
-
       if (isRefRef.current && state.qrCodes) {
         setLocalQRs(state.qrCodes);
       }
@@ -106,7 +51,7 @@ function App() {
     function onConnect() {
       const sTx = localStorage.getItem('myTxId');
       const sName = localStorage.getItem('draftName');
-
+      // Auto-rejoin on reconnect / refresh (Feature 6 — server handles silent re-auth)
       if (sTx && sName) {
         socket.emit('joinWaitingRoom', { name: sName, ticketCode: sTx });
       }
@@ -117,10 +62,13 @@ function App() {
       localStorage.removeItem('draftName');
       setJoined(false);
       setIsRef(false);
+      setRoomPhase('LOBBY');
       window.location.reload();
     }
 
+    // NEW Feature 5: Non-destructive phase sync
     function onGameSyncPhase(phase) {
+      setRoomPhase(phase);
       setActiveSlot(null);
       if (phase === 'LOBBY' && !isRefRef.current) {
         setJoined(true);
@@ -133,6 +81,7 @@ function App() {
       setJoined(true);
     }
 
+    // NEW Feature 6: Only show error popup for truly unauthorized connections
     function onError(message) {
       alert(message);
     }
@@ -144,10 +93,10 @@ function App() {
     socket.on('refConfirm', onRefConfirm);
     socket.on('error', onError);
 
-    // Initial Engine Handshake execution logic
+    // Trigger join on initial mount
     onConnect();
 
-    // Setup an internal light-weight interval engine to fetch server state consistently
+    // Lightweight state polling fallback (3s)
     const fetchInterval = setInterval(async () => {
       try {
         const res = await fetch(`${BACKEND_URL}/api/state`);
@@ -175,7 +124,6 @@ function App() {
     if (!myName || !myTxId) {
       return alert('Uzuza imyirondoro yose (Fill all fields)');
     }
-
     localStorage.setItem('draftName', myName);
     localStorage.setItem('myTxId', myTxId);
     socket.emit('joinWaitingRoom', { name: myName, ticketCode: myTxId });
@@ -184,7 +132,7 @@ function App() {
   if (!gameState) {
     return (
       <div style={{ padding: 32, textAlign: 'center' }}>
-        <p>Connecting to Arena…</p>
+        <p>Connecting to Arena...</p>
       </div>
     );
   }
@@ -198,23 +146,13 @@ function App() {
     return (
       <div style={{ padding: 24, maxWidth: 520, margin: '0 auto' }}>
         <h2>🏟️ Arena Lobby</h2>
-
-        <div
-          style={{
-            marginTop: 12,
-            padding: 12,
-            background: '#fff8e1',
-            border: '1px solid #f0c36d',
-            borderRadius: 6,
-            fontSize: 13,
-            lineHeight: 1.5
-          }}
-        >
-          <strong>Notice:</strong> This is the fixed copy-paste version of the file.
-          If you want your original long legal / payment / eligibility notice back,
-          paste your previous JSX text block here after the app is working.
+        <div style={{
+          marginTop: 12, padding: 12, background: '#fff8e1',
+          border: '1px solid #f0c36d', borderRadius: 6, fontSize: 13, lineHeight: 1.5
+        }}>
+          <strong>Notice:</strong> Enter your name and TDX-ID to join the arena.
+          Your ticket will be verified before entry.
         </div>
-
         <div style={{ marginTop: 16 }}>
           <input
             placeholder="Izina ryawe (Your name)"
@@ -231,21 +169,14 @@ function App() {
           <button
             onClick={handleJoin}
             style={{
-              width: '100%',
-              padding: 12,
-              background: '#1a73e8',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer'
+              width: '100%', padding: 12, background: '#1a73e8',
+              color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer'
             }}
           >
             KWINJIRA
           </button>
         </div>
-
         <hr style={{ margin: '24px 0' }} />
-
         <div>
           <strong>Referee Login</strong>
           <input
@@ -258,34 +189,25 @@ function App() {
           <button
             onClick={() => socket.emit('claimReferee', refToken)}
             style={{
-              width: '100%',
-              padding: 10,
-              background: '#333',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer'
+              width: '100%', padding: 10, background: '#333',
+              color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer'
             }}
           >
             Claim Referee
           </button>
         </div>
-
         {gameState.allViewers?.length > 0 && (
           <div style={{ marginTop: 24 }}>
             <strong>Viewers ({gameState.allViewers.length})</strong>
             <input
-              placeholder="Search viewers…"
+              placeholder="Search viewers..."
               value={lobbySearch}
               onChange={e => setLobbySearch(e.target.value)}
               style={{ display: 'block', width: '100%', margin: '8px 0', padding: 6 }}
             />
             <ul style={{ listStyle: 'none', padding: 0 }}>
               {filteredViewers.map(v => (
-                <li
-                  key={v.id}
-                  style={{ padding: '4px 0', borderBottom: '1px solid #eee' }}
-                >
+                <li key={v.id || v.txId} style={{ padding: '4px 0', borderBottom: '1px solid #eee' }}>
                   {v.name} — <small>{v.role}</small>
                 </li>
               ))}
@@ -296,19 +218,17 @@ function App() {
     );
   }
 
-  const myViewer = gameState.allViewers?.find(
-    v => v.txId === localStorage.getItem('myTxId')
-  );
+  const myViewer = gameState.allViewers?.find(v => v.txId === localStorage.getItem('myTxId'));
+
+  // NEW Feature 5: Phase-aware render logic
+  // Voting stage is only shown when votingAllowed is true (Feature 2)
+  const showVoting = gameState.votingAllowed || isRef;
 
   return (
     <div style={{ padding: 16 }}>
       {gameState.arenaBanner && (
         <div style={{ textAlign: 'center', marginBottom: 12 }}>
-          <img
-            src={gameState.arenaBanner}
-            alt="Arena Banner"
-            style={{ maxWidth: '100%', maxHeight: 120 }}
-          />
+          <img src={gameState.arenaBanner} alt="Arena Banner" style={{ maxWidth: '100%', maxHeight: 120 }} />
         </div>
       )}
 
@@ -326,14 +246,7 @@ function App() {
       )}
 
       {isRef && (
-        <div
-          style={{
-            background: '#fff3cd',
-            padding: 12,
-            borderRadius: 6,
-            marginBottom: 16
-          }}
-        >
+        <div style={{ background: '#fff3cd', padding: 12, borderRadius: 6, marginBottom: 16 }}>
           <div style={{ marginBottom: 8 }}>
             <strong>📺 YouTube Link</strong>
             <input
@@ -341,14 +254,10 @@ function App() {
               onChange={e => setNewYoutube(e.target.value)}
               style={{ marginLeft: 8, padding: 6, width: 260 }}
             />
-            <button
-              onClick={() => socket.emit('refUpdateYoutube', newYoutube)}
-              style={{ marginLeft: 8, padding: '6px 12px' }}
-            >
+            <button onClick={() => socket.emit('refUpdateYoutube', newYoutube)} style={{ marginLeft: 8, padding: '6px 12px' }}>
               Set
             </button>
           </div>
-
           <div>
             <strong>🖼️ Banner URL</strong>
             <input
@@ -356,26 +265,53 @@ function App() {
               onChange={e => setBannerUrl(e.target.value)}
               style={{ marginLeft: 8, padding: 6, width: 260 }}
             />
-            <button
-              onClick={() => socket.emit('refUpdateBanner', bannerUrl)}
-              style={{ marginLeft: 8, padding: '6px 12px' }}
-            >
+            <button onClick={() => socket.emit('refUpdateBanner', bannerUrl)} style={{ marginLeft: 8, padding: '6px 12px' }}>
               Set
             </button>
+          </div>
+
+          {/* NEW Feature 5: Room Phase Navigation Controls */}
+          <div style={{ marginTop: 12, padding: 10, background: '#e8eaf6', borderRadius: 6 }}>
+            <strong>🔀 Room Phase Control</strong>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              {['LOBBY', 'DRAFT', 'VOTING'].map(phase => (
+                <button
+                  key={phase}
+                  onClick={() => socket.emit('refSetPhase', phase)}
+                  style={{
+                    padding: '6px 14px',
+                    background: roomPhase === phase ? '#3a4cb0' : '#fff',
+                    color: roomPhase === phase ? '#fff' : '#333',
+                    border: '1px solid #3a4cb0',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    fontWeight: roomPhase === phase ? 'bold' : 'normal'
+                  }}
+                >
+                  {phase}
+                </button>
+              ))}
+            </div>
+            <div style={{ marginTop: 10 }}>
+              {/* NEW Feature 2: Master voting gate toggle */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={!!gameState.votingAllowed}
+                  onChange={e => socket.emit('refToggleVotingGate', e.target.checked)}
+                />
+                <strong>🗳️ Voting Gate {gameState.votingAllowed ? '🟢 OPEN' : '🔴 LOCKED'}</strong>
+              </label>
+              <p style={{ fontSize: 11, color: '#666', margin: '4px 0 0' }}>
+                Fans cannot see or interact with voting until this gate is toggled ON.
+              </p>
+            </div>
           </div>
         </div>
       )}
 
       {gameState.qrCodes?.some(q => q) && (
-        <div
-          style={{
-            display: 'flex',
-            gap: 8,
-            flexWrap: 'wrap',
-            marginBottom: 16,
-            justifyContent: 'center'
-          }}
-        >
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16, justifyContent: 'center' }}>
           {gameState.qrCodes.map((q, i) =>
             q ? <img key={i} src={q} alt={`QR ${i + 1}`} style={{ width: 80, height: 80 }} /> : null
           )}
@@ -398,15 +334,13 @@ function App() {
               />
             </span>
           ))}
-          <button
-            onClick={() => socket.emit('refUpdateQRs', localQRs)}
-            style={{ marginTop: 4, padding: '6px 14px' }}
-          >
+          <button onClick={() => socket.emit('refUpdateQRs', localQRs)} style={{ marginTop: 4, padding: '6px 14px' }}>
             Update QRs
           </button>
         </div>
       )}
 
+      {/* RefereeDashboard always rendered (manages its own isReferee guard) */}
       <RefereeDashboard
         socket={socket}
         gameState={gameState}
@@ -415,35 +349,37 @@ function App() {
         setActiveSlot={setActiveSlot}
       />
 
-      <FanVotingStage
-        socket={socket}
-        gameState={gameState}
-        myTxId={localStorage.getItem('myTxId') || ''}
-        isReferee={isRef}
-      />
+      {/* NEW Feature 2: FanVotingStage only rendered when votingAllowed OR Ref */}
+      {showVoting && (
+        <FanVotingStage
+          socket={socket}
+          gameState={gameState}
+          myTxId={localStorage.getItem('myTxId') || ''}
+          isReferee={isRef}
+        />
+      )}
 
-      {gameState.gameStarted && !isRef && myViewer?.role === 'spectator' && (
+      {/* Spectator draft view — only during DRAFT phase */}
+      {gameState.gameStarted && !isRef && myViewer?.role === 'spectator' && roomPhase === 'DRAFT' && (
         <div style={{ marginTop: 24 }}>
           <h3>🏟️ Live Draft</h3>
           <p><strong>Current Turn:</strong> {gameState.currentTurn}</p>
-          <p>
-            T1 Picks: {gameState.team1Picks?.length || 0} / T2 Picks: {gameState.team2Picks?.length || 0}
-          </p>
+          <p>T1 Picks: {gameState.team1Picks?.length || 0} / T2 Picks: {gameState.team2Picks?.length || 0}</p>
         </div>
       )}
 
-      {gameState.gameStarted && myViewer?.role?.startsWith('team') && (
+      {/* Team player draft picker — only during DRAFT phase */}
+      {gameState.gameStarted && myViewer?.role?.startsWith('team') && roomPhase === 'DRAFT' && (
         <div style={{ marginTop: 24 }}>
           <h3>
-            Your Turn: {gameState.currentTurn === myViewer.role ? '✅ YOUR PICK' : '⏳ Waiting…'}
+            Your Turn: {gameState.currentTurn === myViewer.role ? '✅ YOUR PICK' : '⏳ Waiting...'}
           </h3>
-
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
             {gameState.availableCards?.map(card => (
               <button
-                key={card.id}
+                key={card.id || card.Id}
                 disabled={gameState.currentTurn !== myViewer.role || gameState.matchLocked}
-                onClick={() => socket.emit('playerPickCard', card.id)}
+                onClick={() => socket.emit('playerPickCard', card.id || card.Id)}
                 style={{
                   padding: '6px 10px',
                   cursor: 'pointer',
