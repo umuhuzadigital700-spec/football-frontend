@@ -1,15 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
 function RefereeDashboard({ socket, gameState, isReferee, activeSlot, setActiveSlot }) {
-  const [matchInput1, setMatchInput1] = useState('');
-  const [matchInput2, setMatchInput2] = useState('');
   const [saveStatus, setSaveStatus] = useState(null);
   const [saveError, setSaveError] = useState('');
-
-  useEffect(() => {
-    if (gameState?.team1Player?.name) setMatchInput1(gameState.team1Player.name);
-    if (gameState?.team2Player?.name) setMatchInput2(gameState.team2Player.name);
-  }, [gameState?.team1Player?.name, gameState?.team2Player?.name]);
 
   useEffect(() => {
     function onSaveAck({ success, matchId, error }) {
@@ -29,10 +22,6 @@ function RefereeDashboard({ socket, gameState, isReferee, activeSlot, setActiveS
   const handleAssignRole = useCallback((userId, role) => {
     socket.emit('refAssignRole', { userId, role });
   }, [socket]);
-
-  const handleSetFormation = useCallback((team, formation) => {
-    // Reserved if you later decide to add referee-side formation control.
-  }, []);
 
   // 🟢 CRITICAL DEPLOYMENT FIX: Guard check is moved AFTER all React hooks have run
   if (!isReferee) return null;
@@ -62,14 +51,6 @@ function RefereeDashboard({ socket, gameState, isReferee, activeSlot, setActiveS
     setSaveStatus('saving');
     setSaveError('');
     socket.emit('refSaveLiveSession');
-  };
-
-  const handlePickCard = (cardId) => {
-    // Referees do not pick cards directly.
-  };
-
-  const handleSetPosition = (cardId, slotIndex) => {
-    socket.emit('playerSetPosition', { cardId, slotIndex });
   };
 
   return (
