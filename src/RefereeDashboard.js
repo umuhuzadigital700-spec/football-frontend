@@ -26,6 +26,15 @@ function RefereeDashboard({ socket, gameState, isReferee, activeSlot, setActiveS
     return () => socket.off('refSaveLiveSession_ack');
   }, [socket]);
 
+  const handleAssignRole = useCallback((userId, role) => {
+    socket.emit('refAssignRole', { userId, role });
+  }, [socket]);
+
+  const handleSetFormation = useCallback((team, formation) => {
+    // Reserved if you later decide to add referee-side formation control.
+  }, []);
+
+  // 🟢 CRITICAL DEPLOYMENT FIX: Guard check is moved AFTER all React hooks have run
   if (!isReferee) return null;
 
   const gs = gameState;
@@ -54,14 +63,6 @@ function RefereeDashboard({ socket, gameState, isReferee, activeSlot, setActiveS
     setSaveError('');
     socket.emit('refSaveLiveSession');
   };
-
-  const handleAssignRole = useCallback((userId, role) => {
-    socket.emit('refAssignRole', { userId, role });
-  }, [socket]);
-
-  const handleSetFormation = useCallback((team, formation) => {
-    // Reserved if you later decide to add referee-side formation control.
-  }, []);
 
   const handlePickCard = (cardId) => {
     // Referees do not pick cards directly.
