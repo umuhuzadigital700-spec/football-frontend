@@ -12,179 +12,82 @@ const socket = io(BACKEND_URL, {
   reconnectionDelay: 1000,
 });
 
-// ── Formation Slot Templates (must match server + RefereeDashboard) ────────────
+// ── Formation Slot Templates ──────────────────────────────────────────────────
 const FORMATION_SLOTS = {
   '4-4-2': [
-    { label: 'GK',  top: 88, left: 50 },
-    { label: 'LB',  top: 70, left: 15 },
-    { label: 'CB1', top: 70, left: 35 },
-    { label: 'CB2', top: 70, left: 65 },
-    { label: 'RB',  top: 70, left: 85 },
-    { label: 'LM',  top: 50, left: 15 },
-    { label: 'CM1', top: 50, left: 35 },
-    { label: 'CM2', top: 50, left: 65 },
-    { label: 'RM',  top: 50, left: 85 },
-    { label: 'ST1', top: 25, left: 35 },
+    { label: 'GK', top: 88, left: 50 }, { label: 'LB', top: 70, left: 15 },
+    { label: 'CB1', top: 70, left: 35 }, { label: 'CB2', top: 70, left: 65 },
+    { label: 'RB', top: 70, left: 85 }, { label: 'LM', top: 50, left: 15 },
+    { label: 'CM1', top: 50, left: 35 }, { label: 'CM2', top: 50, left: 65 },
+    { label: 'RM', top: 50, left: 85 }, { label: 'ST1', top: 25, left: 35 },
     { label: 'ST2', top: 25, left: 65 },
   ],
   '4-3-3': [
-    { label: 'GK',  top: 88, left: 50 },
-    { label: 'LB',  top: 70, left: 15 },
-    { label: 'CB1', top: 70, left: 35 },
-    { label: 'CB2', top: 70, left: 65 },
-    { label: 'RB',  top: 70, left: 85 },
-    { label: 'CM1', top: 50, left: 25 },
-    { label: 'CM2', top: 50, left: 50 },
-    { label: 'CM3', top: 50, left: 75 },
-    { label: 'LW',  top: 20, left: 20 },
-    { label: 'ST',  top: 15, left: 50 },
-    { label: 'RW',  top: 20, left: 80 },
+    { label: 'GK', top: 88, left: 50 }, { label: 'LB', top: 70, left: 15 },
+    { label: 'CB1', top: 70, left: 35 }, { label: 'CB2', top: 70, left: 65 },
+    { label: 'RB', top: 70, left: 85 }, { label: 'CM1', top: 50, left: 25 },
+    { label: 'CM2', top: 50, left: 50 }, { label: 'CM3', top: 50, left: 75 },
+    { label: 'LW', top: 20, left: 20 }, { label: 'ST', top: 15, left: 50 },
+    { label: 'RW', top: 20, left: 80 },
   ],
   '3-5-2': [
-    { label: 'GK',  top: 88, left: 50 },
-    { label: 'CB1', top: 70, left: 25 },
-    { label: 'CB2', top: 70, left: 50 },
-    { label: 'CB3', top: 70, left: 75 },
-    { label: 'LWB', top: 52, left: 10 },
-    { label: 'CM1', top: 50, left: 30 },
-    { label: 'CM2', top: 50, left: 50 },
-    { label: 'CM3', top: 50, left: 70 },
-    { label: 'RWB', top: 52, left: 90 },
-    { label: 'ST1', top: 22, left: 35 },
+    { label: 'GK', top: 88, left: 50 }, { label: 'CB1', top: 70, left: 25 },
+    { label: 'CB2', top: 70, left: 50 }, { label: 'CB3', top: 70, left: 75 },
+    { label: 'LWB', top: 52, left: 10 }, { label: 'CM1', top: 50, left: 30 },
+    { label: 'CM2', top: 50, left: 50 }, { label: 'CM3', top: 50, left: 70 },
+    { label: 'RWB', top: 52, left: 90 }, { label: 'ST1', top: 22, left: 35 },
     { label: 'ST2', top: 22, left: 65 },
   ],
   '4-5-1': [
-    { label: 'GK',  top: 88, left: 50 },
-    { label: 'LB',  top: 70, left: 15 },
-    { label: 'CB1', top: 70, left: 35 },
-    { label: 'CB2', top: 70, left: 65 },
-    { label: 'RB',  top: 70, left: 85 },
-    { label: 'LM',  top: 50, left: 10 },
-    { label: 'CM1', top: 50, left: 30 },
-    { label: 'CM2', top: 50, left: 50 },
-    { label: 'CM3', top: 50, left: 70 },
-    { label: 'RM',  top: 50, left: 90 },
-    { label: 'ST',  top: 18, left: 50 },
+    { label: 'GK', top: 88, left: 50 }, { label: 'LB', top: 70, left: 15 },
+    { label: 'CB1', top: 70, left: 35 }, { label: 'CB2', top: 70, left: 65 },
+    { label: 'RB', top: 70, left: 85 }, { label: 'LM', top: 50, left: 10 },
+    { label: 'CM1', top: 50, left: 30 }, { label: 'CM2', top: 50, left: 50 },
+    { label: 'CM3', top: 50, left: 70 }, { label: 'RM', top: 50, left: 90 },
+    { label: 'ST', top: 18, left: 50 },
   ],
   '5-3-2': [
-    { label: 'GK',  top: 88, left: 50 },
-    { label: 'LWB', top: 68, left: 10 },
-    { label: 'CB1', top: 70, left: 28 },
-    { label: 'CB2', top: 70, left: 50 },
-    { label: 'CB3', top: 70, left: 72 },
-    { label: 'RWB', top: 68, left: 90 },
-    { label: 'CM1', top: 48, left: 25 },
-    { label: 'CM2', top: 48, left: 50 },
-    { label: 'CM3', top: 48, left: 75 },
-    { label: 'ST1', top: 22, left: 35 },
+    { label: 'GK', top: 88, left: 50 }, { label: 'LWB', top: 68, left: 10 },
+    { label: 'CB1', top: 70, left: 28 }, { label: 'CB2', top: 70, left: 50 },
+    { label: 'CB3', top: 70, left: 72 }, { label: 'RWB', top: 68, left: 90 },
+    { label: 'CM1', top: 48, left: 25 }, { label: 'CM2', top: 48, left: 50 },
+    { label: 'CM3', top: 48, left: 75 }, { label: 'ST1', top: 22, left: 35 },
     { label: 'ST2', top: 22, left: 65 },
   ],
   '4-2-3-1': [
-    { label: 'GK',  top: 88, left: 50 },
-    { label: 'LB',  top: 72, left: 15 },
-    { label: 'CB1', top: 72, left: 35 },
-    { label: 'CB2', top: 72, left: 65 },
-    { label: 'RB',  top: 72, left: 85 },
-    { label: 'DM1', top: 57, left: 35 },
-    { label: 'DM2', top: 57, left: 65 },
-    { label: 'LAM', top: 38, left: 20 },
-    { label: 'CAM', top: 35, left: 50 },
-    { label: 'RAM', top: 38, left: 80 },
-    { label: 'ST',  top: 18, left: 50 },
+    { label: 'GK', top: 88, left: 50 }, { label: 'LB', top: 72, left: 15 },
+    { label: 'CB1', top: 72, left: 35 }, { label: 'CB2', top: 72, left: 65 },
+    { label: 'RB', top: 72, left: 85 }, { label: 'DM1', top: 57, left: 35 },
+    { label: 'DM2', top: 57, left: 65 }, { label: 'LAM', top: 38, left: 20 },
+    { label: 'CAM', top: 35, left: 50 }, { label: 'RAM', top: 38, left: 80 },
+    { label: 'ST', top: 18, left: 50 },
   ],
 };
-
 const FORMATIONS = Object.keys(FORMATION_SLOTS);
 
-// ── Tactical Pitch (player view) ───────────────────────────────────────────────
+// ── Tactical Pitch (player view) ──────────────────────────────────────────────
 function TacticalPitch({ formation, tactics, myPicks, onSlotClick, isLocked, teamColor }) {
   const slots = FORMATION_SLOTS[formation] || FORMATION_SLOTS['4-4-2'];
   return (
-    <div style={{
-      position: 'relative',
-      width: '100%',
-      paddingBottom: '155%',
-      background: 'linear-gradient(180deg, #1a6b2a 0%, #1e7a30 50%, #1a6b2a 100%)',
-      border: '2px solid #fff',
-      borderRadius: 10,
-      overflow: 'hidden',
-      userSelect: 'none',
-    }}>
-      {/* Pitch lines */}
+    <div style={{ position: 'relative', width: '100%', paddingBottom: '130%', background: 'linear-gradient(180deg,#1a6b2a 0%,#1e7a30 50%,#1a6b2a 100%)', border: '2px solid #fff', borderRadius: 10, overflow: 'hidden', userSelect: 'none' }}>
+      {/* pitch lines */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
         <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.4)' }} />
-        <div style={{ position: 'absolute', top: '44%', left: '20%', right: '20%', bottom: '2%', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 2 }} />
-        <div style={{ position: 'absolute', top: '1%', left: '20%', right: '20%', height: '10%', border: '1px solid rgba(255,255,255,0.3)' }} />
-        <div style={{
-          position: 'absolute', top: '47%', left: '50%',
-          transform: 'translate(-50%,-50%)',
-          width: '22%', paddingBottom: '22%',
-          borderRadius: '50%', border: '1px solid rgba(255,255,255,0.35)',
-        }} />
+        <div style={{ position: 'absolute', top: '44%', left: '20%', right: '20%', bottom: '3%', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 2 }} />
+        <div style={{ position: 'absolute', top: '2%', left: '20%', right: '20%', height: '10%', border: '1px solid rgba(255,255,255,0.3)' }} />
+        <div style={{ position: 'absolute', top: '44%', left: '50%', transform: 'translate(-50%,-50%)', width: '20%', paddingBottom: '20%', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.3)' }} />
       </div>
-      {/* Formation label */}
-      <div style={{
-        position: 'absolute', bottom: 5, right: 8, zIndex: 5,
-        color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 600,
-      }}>
-        {formation}
-      </div>
-      {/* Slots */}
       {slots.map((slot, idx) => {
         const placed = tactics[idx];
-        const isEmpty = !placed;
         return (
-          <div
-            key={idx}
-            onClick={() => !isLocked && onSlotClick && onSlotClick(idx)}
-            style={{
-              position: 'absolute',
-              top: `${slot.top}%`,
-              left: `${slot.left}%`,
-              transform: 'translate(-50%, -50%)',
-              zIndex: 10,
-              cursor: isLocked ? 'default' : 'pointer',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{
-              width: 38,
-              height: 38,
-              borderRadius: '50%',
-              background: placed
-                ? teamColor
-                : 'rgba(255,255,255,0.12)',
-              border: `2px solid ${placed ? '#fff' : 'rgba(255,255,255,0.3)'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 8,
-              fontWeight: 700,
-              color: '#fff',
-              textShadow: '0 1px 3px rgba(0,0,0,0.9)',
-              transition: 'transform 0.15s, box-shadow 0.15s',
-              boxShadow: placed ? '0 2px 8px rgba(0,0,0,0.5)' : 'none',
-            }}>
-              {placed
-                ? (placed.name || placed.playerName || placed.Name || '?').substring(0, 4)
-                : isEmpty ? slot.label.substring(0, 2) : ''}
+          <div key={idx} onClick={() => !isLocked && onSlotClick && onSlotClick(idx)}
+            style={{ position: 'absolute', top: `${slot.top}%`, left: `${slot.left}%`, transform: 'translate(-50%,-50%)', zIndex: 10, textAlign: 'center', cursor: isLocked ? 'default' : 'pointer' }}>
+            <div style={{ width: 34, height: 34, borderRadius: '50%', background: placed ? teamColor : 'rgba(255,255,255,0.15)', border: `2px solid ${placed ? '#fff' : 'rgba(255,255,255,0.4)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.9)', boxShadow: placed ? '0 2px 8px rgba(0,0,0,0.5)' : 'none', transition: 'all 0.2s' }}>
+              {placed ? (placed.name || '?').substring(0, 4) : slot.label}
             </div>
             {placed && (
-              <div style={{
-                position: 'absolute', top: '110%', left: '50%',
-                transform: 'translateX(-50%)',
-                background: 'rgba(0,0,0,0.75)',
-                color: '#fff',
-                fontSize: 8,
-                padding: '1px 4px',
-                borderRadius: 3,
-                whiteSpace: 'nowrap',
-                maxWidth: 64,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                pointerEvents: 'none',
-              }}>
-                {(placed.name || placed.playerName || placed.Name || '').substring(0, 10)}
+              <div style={{ position: 'absolute', top: '105%', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 7, padding: '1px 4px', borderRadius: 2, whiteSpace: 'nowrap', maxWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {(placed.name || '').substring(0, 9)}
               </div>
             )}
           </div>
@@ -194,502 +97,498 @@ function TacticalPitch({ formation, tactics, myPicks, onSlotClick, isLocked, tea
   );
 }
 
-// ── Main App ───────────────────────────────────────────────────────────────────
+// ── Main App ──────────────────────────────────────────────────────────────────
 function App() {
+  // ── Auth state ────────────────────────────────────────────────────────────
+  const [screen, setScreen] = useState('login'); // 'login' | 'lobby' | 'app'
+  const [loginName, setLoginName] = useState('');
+  const [loginCode, setLoginCode] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [myTxId, setMyTxId] = useState('');
+  const [myName, setMyName] = useState('');
+  const [isPremium, setIsPremium] = useState(false);
+
+  // ── Referee state ─────────────────────────────────────────────────────────
+  const [isReferee, setIsReferee] = useState(false);
+  const [refTokenInput, setRefTokenInput] = useState('');
+  const [refError, setRefError] = useState('');
+
+  // ── Game state ────────────────────────────────────────────────────────────
   const [gameState, setGameState] = useState(null);
-  const [myName, setMyName] = useState(localStorage.getItem('draftName') || '');
-  const [myTxId, setMyTxId] = useState(localStorage.getItem('myTxId') || '');
-  const [joined, setJoined] = useState(false);
-  const [refToken, setRefToken] = useState('');
-  const [isRef, setIsRef] = useState(false);
-  const [activeSlot, setActiveSlot] = useState(null);
-  const [lobbySearch, setLobbySearch] = useState('');
-  const [roomPhase, setRoomPhase] = useState('LOBBY');
-  const [votingModeSelect, setVotingModeSelect] = useState('BOTH');
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [notification, setNotification] = useState('');
 
-  const isRefRef = useRef(isRef);
-  useEffect(() => { isRefRef.current = isRef; }, [isRef]);
+  const notifTimer = useRef(null);
+  function showNotif(msg, ms = 3500) {
+    setNotification(msg);
+    clearTimeout(notifTimer.current);
+    notifTimer.current = setTimeout(() => setNotification(''), ms);
+  }
 
+  // ── Socket listeners ──────────────────────────────────────────────────────
   useEffect(() => {
-    function onGameStateUpdate(state) {
-      setGameState(state);
-      if (state.roomPhase) setRoomPhase(state.roomPhase);
-      const sTx = localStorage.getItem('myTxId');
-      const userInLobby = state.allViewers?.find(v => v.txId === sTx);
-      if (userInLobby || isRefRef.current) setJoined(true);
-      else setJoined(false);
-    }
-    function onConnect() {
-      const sTx = localStorage.getItem('myTxId');
-      const sName = localStorage.getItem('draftName');
-      if (sTx && sName) socket.emit('joinWaitingRoom', { name: sName, ticketCode: sTx });
-    }
-    function onClearArenaForce() {
-      localStorage.removeItem('myTxId');
-      localStorage.removeItem('draftName');
-      setJoined(false);
-      setIsRef(false);
-      setRoomPhase('LOBBY');
-      window.location.reload();
-    }
-    function onGameSyncPhase(phase) {
-      setRoomPhase(phase);
-      setActiveSlot(null);
-      if (phase === 'LOBBY' && !isRefRef.current) setJoined(true);
-    }
-    function onRefConfirm(val) {
-      setIsRef(val);
-      isRefRef.current = val;
-      setJoined(true);
-    }
-    function onError(message) {
-      alert(message);
+    function onState(gs) { setGameState(gs); }
+
+    // ── joinResult: the critical gate ─────────────────────────────────────
+    function onJoinResult({ success, error, isPremium: prem }) {
+      setLoginLoading(false);
+      if (success) {
+        setIsPremium(!!prem);
+        setScreen('lobby');
+      } else {
+        setLoginError(error || 'Access denied. Please check your MoMo transaction ID.');
+      }
     }
 
-    socket.on('gameStateUpdate', onGameStateUpdate);
-    socket.on('connect', onConnect);
-    socket.on('clearArenaForce', onClearArenaForce);
-    socket.on('gameSyncPhase', onGameSyncPhase);
+    function onRefConfirm(ok) {
+      if (ok) { setIsReferee(true); setRefError(''); setScreen('app'); }
+      else { setRefError('Wrong token. Try again.'); }
+    }
+
+    function onError(msg) { showNotif('⚠️ ' + msg); }
+
+    function onClearArena() {
+      setScreen('login');
+      setMyTxId(''); setMyName(''); setIsPremium(false);
+      setIsReferee(false); setGameState(null);
+    }
+
+    socket.on('gameStateUpdate', onState);
+    socket.on('joinResult', onJoinResult);
     socket.on('refConfirm', onRefConfirm);
     socket.on('error', onError);
-
-    onConnect();
-
-    const fetchInterval = setInterval(async () => {
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/state`);
-        if (res.ok) onGameStateUpdate(await res.json());
-      } catch (e) {
-        console.warn('State polling failure:', e);
-      }
-    }, 3000);
+    socket.on('clearArenaForce', onClearArena);
 
     return () => {
-      clearInterval(fetchInterval);
-      socket.off('gameStateUpdate', onGameStateUpdate);
-      socket.off('connect', onConnect);
-      socket.off('clearArenaForce', onClearArenaForce);
-      socket.off('gameSyncPhase', onGameSyncPhase);
+      socket.off('gameStateUpdate', onState);
+      socket.off('joinResult', onJoinResult);
       socket.off('refConfirm', onRefConfirm);
       socket.off('error', onError);
+      socket.off('clearArenaForce', onClearArena);
     };
   }, []);
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const handleJoin = useCallback(() => {
-    if (!myName || !myTxId) return alert('Uzuza imyirondoro yose (Fill all fields)');
-    localStorage.setItem('draftName', myName);
-    localStorage.setItem('myTxId', myTxId);
-    socket.emit('joinWaitingRoom', { name: myName, ticketCode: myTxId });
-  }, [myName, myTxId]);
+    const name = loginName.trim();
+    const code = loginCode.trim();
+    if (!name) { setLoginError('Please enter your name.'); return; }
+    if (!code) { setLoginError('Please enter your MoMo transaction ID.'); return; }
+    setLoginError('');
+    setLoginLoading(true);
+    socket.emit('joinWaitingRoom', { name, ticketCode: code });
+    setMyTxId(code);
+    setMyName(name);
+  }, [loginName, loginCode]);
 
-  if (!gameState) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0a0a1a', color: '#fff', fontSize: 18 }}>
-        ⏳ Connecting to Arena…
-      </div>
-    );
-  }
+  const handleRefLogin = useCallback(() => {
+    if (!refTokenInput.trim()) { setRefError('Enter referee token.'); return; }
+    socket.emit('claimReferee', refTokenInput.trim());
+  }, [refTokenInput]);
 
-  const myViewer = gameState.allViewers?.find(v => v.txId === myTxId);
-  const myRole = myViewer?.role || 'spectator';
-  const isTeamPlayer = myRole === 'team1' || myRole === 'team2';
-  const isSpectator = !isRef && !isTeamPlayer;
+  const handlePickCard = useCallback((cardId) => {
+    socket.emit('playerPickCard', cardId);
+    setSelectedCard(null);
+  }, []);
 
-  // ── Referee view ──────────────────────────────────────────────────────────
-  if (isRef) {
-    return (
-      <div style={{ background: '#0a0a1a', minHeight: '100vh' }}>
-        {/* Ref-only: VIP Secure Live (hidden from all non-ref users) */}
-        <div style={{ background: '#0d0d1f', borderBottom: '1px solid #222', padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-          <span style={{ color: '#f9a825', fontWeight: 700, fontSize: 14 }}>🏟️ Arena Referee Panel</span>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {/* VIP Secure Live — REFEREE ONLY, hidden from fans */}
-            {myViewer?.isPremium && myViewer?.secureLink && (
-              <a
-                href={myViewer.secureLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ fontSize: 12, color: '#ffd700', textDecoration: 'none', padding: '4px 10px', border: '1px solid #ffd700', borderRadius: 6 }}
-              >
-                🔐 Secure VIP Live
-              </a>
-            )}
-            {/* Voting mode selector */}
-            <select
-              value={votingModeSelect}
-              onChange={e => setVotingModeSelect(e.target.value)}
-              style={{ fontSize: 12, padding: '4px 8px', borderRadius: 6, background: '#1a1a2e', color: '#eee', border: '1px solid #555' }}
-            >
-              <option value="BOTH">Mode: A + B</option>
-              <option value="A">Mode: A Only</option>
-              <option value="B">Mode: B Only</option>
-            </select>
-            <button
-              onClick={() => socket.emit('refToggleVotingGate', { allowed: !gameState.votingAllowed, mode: votingModeSelect })}
-              style={{
-                fontSize: 12, padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                background: gameState.votingAllowed ? '#b71c1c' : '#2e7d32', color: '#fff', fontWeight: 700,
-              }}
-            >
-              {gameState.votingAllowed ? '🚫 Close Voting' : '🗳️ Open Voting'}
-            </button>
-          </div>
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
-          <div style={{ flex: 1, minWidth: 320 }}>
-            <RefereeDashboard
-              socket={socket}
-              gameState={gameState}
-              isReferee={isRef}
-              activeSlot={activeSlot}
-              setActiveSlot={setActiveSlot}
-            />
-          </div>
-          {/* Ref always sees the fan voting stage too for monitoring */}
-          <div style={{ flex: 1, minWidth: 320, borderLeft: '1px solid #222' }}>
-            <div style={{ padding: 12 }}>
-              <div style={{ color: '#4fc3f7', fontSize: 14, fontWeight: 700, marginBottom: 8 }}>👀 Fan Voting Monitor</div>
-              <FanVotingStage socket={socket} gameState={gameState} myTxId={myTxId} isReferee={true} />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleSetFormation = useCallback((formation) => {
+    if (!gameState) return;
+    const gs = gameState;
+    const myRole = gs.allViewers?.find(v => v.txId === myTxId)?.role;
+    if (myRole !== 'team1' && myRole !== 'team2') return;
+    socket.emit('playerSetFormation', { team: myRole, formation });
+  }, [gameState, myTxId]);
 
-  // ── Login screen ──────────────────────────────────────────────────────────
-  if (!joined) {
-    return (
-      <div style={{ background: '#0a0a1a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-        <div style={{ background: '#111', border: '1px solid #333', borderRadius: 12, padding: 32, maxWidth: 400, width: '100%', color: '#eee' }}>
-          <h2 style={{ textAlign: 'center', color: '#4fc3f7', marginBottom: 24 }}>⚽ Arena Entry</h2>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 13, color: '#aaa', display: 'block', marginBottom: 4 }}>Display Name</label>
-            <input
-              value={myName}
-              onChange={e => setMyName(e.target.value)}
-              placeholder="Your name"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #444', background: '#1a1a2e', color: '#eee', fontSize: 14 }}
-            />
-          </div>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ fontSize: 13, color: '#aaa', display: 'block', marginBottom: 4 }}>Ticket Code / TX ID</label>
-            <input
-              value={myTxId}
-              onChange={e => setMyTxId(e.target.value)}
-              placeholder="Your ticket code"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #444', background: '#1a1a2e', color: '#eee', fontSize: 14 }}
-            />
-          </div>
-          <button
-            onClick={handleJoin}
-            style={{ width: '100%', padding: '11px', borderRadius: 8, border: 'none', background: '#1565c0', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
-          >
-            🚀 Enter Arena
-          </button>
-          {/* Referee login */}
-          <div style={{ marginTop: 24, borderTop: '1px solid #222', paddingTop: 18 }}>
-            <label style={{ fontSize: 12, color: '#777', display: 'block', marginBottom: 4 }}>Referee Access</label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="password"
-                value={refToken}
-                onChange={e => setRefToken(e.target.value)}
-                placeholder="Referee token"
-                style={{ flex: 1, padding: '8px 10px', borderRadius: 6, border: '1px solid #333', background: '#1a1a2e', color: '#eee', fontSize: 13 }}
-              />
-              <button
-                onClick={() => socket.emit('claimReferee', refToken)}
-                style={{ padding: '8px 14px', borderRadius: 6, border: 'none', background: '#f9a825', color: '#111', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}
-              >
-                Login
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleSlotClick = useCallback((slotIndex) => {
+    if (!selectedCard) return;
+    socket.emit('playerSetPosition', { cardId: selectedCard, slotIndex });
+    setSelectedCard(null);
+    setSelectedSlot(null);
+  }, [selectedCard]);
 
-  // ── Fan / Player Lobby View ───────────────────────────────────────────────
-  // §3.1: Spectators see banners, QR codes, Watch Video link — NOT the draft panel.
-  // §3.1: Voting gate is BLIND — no invite shown when CLOSED.
-
+  // ── Derived state ─────────────────────────────────────────────────────────
   const gs = gameState;
+  const myViewer = gs?.allViewers?.find(v => v.txId === myTxId);
+  const myRole = myViewer?.role || 'spectator';
+  const isTeam1 = myRole === 'team1';
+  const isTeam2 = myRole === 'team2';
+  const isTeamPlayer = isTeam1 || isTeam2;
+  const myPicks = isTeam1 ? (gs?.team1Picks || []) : isTeam2 ? (gs?.team2Picks || []) : [];
+  const myFormation = isTeam1 ? (gs?.team1Formation || '4-4-2') : isTeam2 ? (gs?.team2Formation || '4-4-2') : '4-4-2';
+  const myTactics = isTeam1 ? (gs?.team1Tactics || {}) : (gs?.team2Tactics || {});
+  const isMyTurn = (isTeam1 && gs?.currentTurn === 'team1') || (isTeam2 && gs?.currentTurn === 'team2');
+  const isLocked = gs?.matchReady || false;
 
-  // If voting is open and we are NOT in draft (spectator or voting phase), show voting stage
-  if (roomPhase === 'VOTING' && gs.votingAllowed && !isTeamPlayer) {
+  // ── Styles ─────────────────────────────────────────────────────────────────
+  const S = {
+    page: { minHeight: '100vh', background: '#0a0a14', color: '#eee', fontFamily: "'Segoe UI', sans-serif", display: 'flex', flexDirection: 'column' },
+    card: { background: '#111827', border: '1px solid #1e2940', borderRadius: 12, padding: 20, marginBottom: 16 },
+    btn: (bg, disabled) => ({ background: disabled ? '#2a2a3e' : bg, color: disabled ? '#666' : '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', cursor: disabled ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, opacity: disabled ? 0.6 : 1, transition: 'all 0.15s', margin: '3px 4px 3px 0' }),
+    inp: { width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid #2a3550', background: '#0d1117', color: '#eee', fontSize: 14, boxSizing: 'border-box', marginBottom: 10, outline: 'none' },
+    label: { display: 'block', fontSize: 12, color: '#8899bb', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 },
+    error: { background: 'rgba(239,83,80,0.15)', border: '1px solid #ef5350', borderRadius: 8, padding: '10px 14px', color: '#ef9a9a', fontSize: 13, marginBottom: 12 },
+    success: { background: 'rgba(102,187,106,0.15)', border: '1px solid #66bb6a', borderRadius: 8, padding: '10px 14px', color: '#a5d6a7', fontSize: 13, marginBottom: 12 },
+  };
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // SCREEN: LOGIN
+  // ════════════════════════════════════════════════════════════════════════════
+  if (screen === 'login') {
     return (
-      <div style={{ background: '#0a0a1a', minHeight: '100vh', padding: 16 }}>
-        <FanVotingStage socket={socket} gameState={gs} myTxId={myTxId} isReferee={false} />
+      <div style={{ ...S.page, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+        <div style={{ width: '100%', maxWidth: 420 }}>
+          {/* Logo / Title */}
+          <div style={{ textAlign: 'center', marginBottom: 32 }}>
+            <div style={{ fontSize: 48, marginBottom: 8 }}>🏟️</div>
+            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#4fc3f7', letterSpacing: -0.5 }}>RUHAGO N'INSHUTI</h1>
+            <p style={{ margin: '4px 0 0', color: '#5577aa', fontSize: 14 }}>Arena Fan Experience</p>
+          </div>
+
+          {/* Fan login */}
+          <div style={S.card}>
+            <h2 style={{ margin: '0 0 16px', fontSize: 16, color: '#f9a825' }}>🎫 Enter with MoMo Ticket</h2>
+            {loginError && <div style={S.error}>❌ {loginError}</div>}
+            <label style={S.label}>Your Name</label>
+            <input style={S.inp} value={loginName} onChange={e => setLoginName(e.target.value)} placeholder="Enter your full name" onKeyDown={e => e.key === 'Enter' && handleJoin()} />
+            <label style={S.label}>MoMo Transaction ID</label>
+            <input style={S.inp} value={loginCode} onChange={e => setLoginCode(e.target.value)} placeholder="e.g. 12345678901" onKeyDown={e => e.key === 'Enter' && handleJoin()} />
+            <button style={{ ...S.btn('#1565c0', loginLoading), width: '100%', padding: '13px 18px', fontSize: 15 }} onClick={handleJoin} disabled={loginLoading}>
+              {loginLoading ? '⏳ Verifying payment...' : '🚪 Enter Arena'}
+            </button>
+            <p style={{ fontSize: 11, color: '#445566', margin: '10px 0 0', textAlign: 'center' }}>
+              Your MoMo TxId is the transaction number from your MTN payment SMS
+            </p>
+          </div>
+
+          {/* Referee login */}
+          <div style={{ ...S.card, background: '#0d0d1f', border: '1px solid #1a1a3e' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: 14, color: '#7986cb' }}>🔐 Referee Access</h3>
+            {refError && <div style={S.error}>{refError}</div>}
+            <input style={{ ...S.inp, marginBottom: 8 }} type="password" value={refTokenInput} onChange={e => setRefTokenInput(e.target.value)} placeholder="Referee token" onKeyDown={e => e.key === 'Enter' && handleRefLogin()} />
+            <button style={S.btn('#303f9f', false)} onClick={handleRefLogin}>🔓 Login as Referee</button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // If the user is an assigned team player in DRAFT phase, show draft panel
-  if (isTeamPlayer && roomPhase === 'DRAFT' && gs.gameStarted) {
-    const myTeam = myRole;
-    const myPicks = myTeam === 'team1' ? gs.team1Picks || [] : gs.team2Picks || [];
-    const opponentPicks = myTeam === 'team1' ? gs.team2Picks || [] : gs.team1Picks || [];
-    const myTactics = myTeam === 'team1' ? gs.team1Tactics || {} : gs.team2Tactics || {};
-    const myFormation = myTeam === 'team1' ? gs.team1Formation : gs.team2Formation;
-    const isMyTurn = gs.currentTurn === myTeam;
-    const isLocked = gs.matchReady;
-    const filteredCards = (gs.availableCards || []).filter(c =>
-      !lobbySearch || (c.name || c.playerName || c.Name || '').toLowerCase().includes(lobbySearch.toLowerCase())
-    );
-
+  // ════════════════════════════════════════════════════════════════════════════
+  // SCREEN: LOBBY (verified fan waiting for match to start)
+  // ════════════════════════════════════════════════════════════════════════════
+  if (screen === 'lobby' && gs && !gs.gameStarted) {
+    const qrCodes = (gs.qrCodes || []).filter(q => q && q.trim() !== '');
     return (
-      <div style={{ background: '#0a0a1a', minHeight: '100vh', color: '#eee', fontFamily: 'sans-serif' }}>
+      <div style={S.page}>
+        {/* Notification */}
+        {notification && (
+          <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', background: '#333', color: '#fff', padding: '10px 20px', borderRadius: 8, zIndex: 9999, fontSize: 13 }}>
+            {notification}
+          </div>
+        )}
+
         {/* Header */}
-        <div style={{ background: '#0d0d1f', borderBottom: '1px solid #222', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-          <span style={{ color: '#4fc3f7', fontWeight: 700 }}>
-            {myTeam === 'team1' ? '🔵' : '🔴'} {myViewer?.name} — {myTeam === 'team1' ? 'Team 1' : 'Team 2'}
-          </span>
-          <span style={{
-            fontSize: 13, padding: '4px 10px', borderRadius: 12,
-            background: isMyTurn && !isLocked ? '#2e7d32' : '#b71c1c',
-            color: '#fff', fontWeight: 700,
-          }}>
-            {isLocked ? '🔒 Locked' : isMyTurn ? '✅ Your Turn' : '⏳ Wait…'}
-          </span>
+        <div style={{ background: '#0d0d1f', borderBottom: '1px solid #1e1e3e', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <span style={{ fontSize: 18, fontWeight: 800, color: '#4fc3f7' }}>🏟️ RUHAGO N'INSHUTI</span>
+            <span style={{ marginLeft: 10, fontSize: 12, padding: '2px 8px', borderRadius: 10, background: isPremium ? '#f9a825' : '#1565c0', color: '#fff' }}>{isPremium ? '⭐ VIP' : '🎫 Fan'}</span>
+          </div>
+          <span style={{ fontSize: 13, color: '#4a5568' }}>Welcome, <strong style={{ color: '#eee' }}>{myName}</strong></span>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
-          {/* ── Card Pool ── */}
-          {!isLocked && (
-            <div style={{ flex: '0 0 260px', borderRight: '1px solid #222', height: 'calc(100vh - 52px)', overflowY: 'auto', padding: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: '#f9a825' }}>
-                🃏 Draft Pool ({filteredCards.length} cards)
-              </div>
-              <input
-                value={lobbySearch}
-                onChange={e => setLobbySearch(e.target.value)}
-                placeholder="Search cards…"
-                style={{ width: '100%', padding: '7px 10px', borderRadius: 6, border: '1px solid #333', background: '#1a1a2e', color: '#eee', fontSize: 12, marginBottom: 8, boxSizing: 'border-box' }}
-              />
-              {/* Roster cap warning */}
-              {myPicks.length >= 11 && (
-                <div style={{ fontSize: 11, color: '#f9a825', padding: '4px 8px', background: '#3e2800', borderRadius: 4, marginBottom: 8 }}>
-                  ⚠️ Roster full (11/11). You cannot pick more cards.
-                </div>
-              )}
-              {filteredCards.map((card) => {
-                const cardId = String(card.id || card.Id || card.name || card.Name);
-                const alreadyPicked = myPicks.some(c => String(c.id || c.Id) === cardId)
-                  || opponentPicks.some(c => String(c.id || c.Id) === cardId);
-                if (alreadyPicked) return null; // Hidden immediately on pick
-                return (
-                  <div
-                    key={cardId}
-                    onClick={() => {
-                      if (!isMyTurn || myPicks.length >= 11 || isLocked) return;
-                      socket.emit('playerPickCard', cardId);
-                    }}
-                    style={{
-                      padding: '8px 10px',
-                      borderRadius: 6,
-                      border: '1px solid #333',
-                      marginBottom: 6,
-                      cursor: isMyTurn && myPicks.length < 11 && !isLocked ? 'pointer' : 'not-allowed',
-                      background: isMyTurn && myPicks.length < 11 && !isLocked ? '#1a1a2e' : '#111',
-                      opacity: isMyTurn && myPicks.length < 11 && !isLocked ? 1 : 0.5,
-                      transition: 'background 0.15s',
-                    }}
-                  >
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{card.name || card.playerName || card.Name || cardId}</div>
-                    {card.position && <div style={{ fontSize: 11, color: '#888' }}>{card.position}</div>}
-                  </div>
-                );
-              })}
+        {/* Arena Banner */}
+        {gs.arenaBanner && (
+          <div style={{ width: '100%', maxHeight: 220, overflow: 'hidden' }}>
+            <img src={gs.arenaBanner} alt="Arena Banner" style={{ width: '100%', objectFit: 'cover', maxHeight: 220 }} onError={e => { e.target.style.display = 'none'; }} />
+          </div>
+        )}
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: 16, maxWidth: 700, margin: '0 auto', width: '100%' }}>
+
+          {/* Status card */}
+          <div style={{ ...S.card, textAlign: 'center', borderColor: '#2e7d32' }}>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+            <h2 style={{ margin: '0 0 6px', color: '#66bb6a', fontSize: 20 }}>Payment Verified!</h2>
+            <p style={{ color: '#8899bb', margin: '0 0 8px', fontSize: 14 }}>
+              {isTeamPlayer
+                ? `You are assigned as ${myRole === 'team1' ? '🔵 Team 1' : '🔴 Team 2'}. Waiting for the Referee to start.`
+                : '⏳ Match will begin shortly. Enjoy the lobby!'}
+            </p>
+            {isPremium && <div style={{ display: 'inline-block', background: '#f9a825', color: '#000', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>⭐ VIP ACCESS</div>}
+          </div>
+
+          {/* Video */}
+          {gs.youtubeLink && (
+            <div style={S.card}>
+              <h3 style={{ margin: '0 0 10px', color: '#f9a825', fontSize: 14 }}>▶️ Featured Video</h3>
+              <a href={gs.youtubeLink} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#b71c1c', color: '#fff', padding: '12px 18px', borderRadius: 8, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>
+                <span style={{ fontSize: 20 }}>▶️</span> Watch Now
+              </a>
             </div>
           )}
 
-          {/* ── Tactical Pitch ── */}
-          <div style={{ flex: 1, minWidth: 280, padding: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: '#f9a825' }}>
-              ⚽ Tactical Formation
-              {isLocked && <span style={{ color: '#ef5350', marginLeft: 8, fontSize: 12 }}>🔒 LOCKED — no changes allowed</span>}
-            </div>
-            {/* Formation selector */}
-            {!isLocked && (
-              <div style={{ marginBottom: 10 }}>
-                <span style={{ fontSize: 12, color: '#aaa', marginRight: 8 }}>Formation:</span>
-                <select
-                  value={myFormation}
-                  onChange={e => socket.emit('playerSetFormation', { team: myTeam, formation: e.target.value })}
-                  style={{ fontSize: 12, padding: '4px 8px', borderRadius: 5, background: '#1a1a2e', color: '#eee', border: '1px solid #555' }}
-                >
-                  {FORMATIONS.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
+          {/* QR Codes */}
+          {qrCodes.length > 0 && (
+            <div style={S.card}>
+              <h3 style={{ margin: '0 0 12px', color: '#f9a825', fontSize: 14 }}>📱 Scan QR Codes</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
+                {qrCodes.map((qr, i) => (
+                  <div key={i} style={{ background: '#fff', borderRadius: 8, padding: 6, textAlign: 'center' }}>
+                    <img src={qr} alt={`QR ${i + 1}`} style={{ width: '100%', borderRadius: 4 }} onError={e => { e.target.parentElement.style.display = 'none'; }} />
+                    <div style={{ fontSize: 11, color: '#333', marginTop: 4 }}>QR {i + 1}</div>
+                  </div>
+                ))}
               </div>
-            )}
-            <div style={{ maxWidth: 320, margin: '0 auto' }}>
-              <TacticalPitch
-                formation={myFormation}
-                tactics={myTactics}
-                myPicks={myPicks}
-                isLocked={isLocked}
-                teamColor={myTeam === 'team1' ? '#1565c0' : '#b71c1c'}
-                onSlotClick={(slotIdx) => {
-                  if (isLocked) return;
-                  if (activeSlot === null) {
-                    setActiveSlot(slotIdx);
-                  } else {
-                    setActiveSlot(null);
-                  }
-                }}
-              />
             </div>
-          </div>
+          )}
 
-          {/* ── My Picks Sidebar ── */}
-          <div style={{ flex: '0 0 200px', borderLeft: '1px solid #222', padding: 12, height: 'calc(100vh - 52px)', overflowY: 'auto' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6, color: '#f9a825' }}>
-              My Picks ({myPicks.length}/11)
+          {/* Voting (if open before match) */}
+          {gs.votingAllowed && (
+            <div style={S.card}>
+              <h3 style={{ margin: '0 0 10px', color: '#f9a825', fontSize: 14 }}>🗳️ Voting is Open!</h3>
+              <FanVotingStage socket={socket} gameState={gs} myTxId={myTxId} />
             </div>
-            {myPicks.map((card, i) => {
-              const cardId = String(card.id || card.Id);
-              const isSelected = activeSlot !== null && !isLocked;
-              return (
-                <div
-                  key={i}
-                  onClick={() => {
-                    if (isLocked || activeSlot === null) return;
-                    socket.emit('playerSetPosition', { cardId, slotIndex: activeSlot });
-                    setActiveSlot(null);
-                  }}
-                  style={{
-                    padding: '7px 9px',
-                    borderRadius: 6,
-                    border: '1px solid #333',
-                    marginBottom: 5,
-                    cursor: isSelected ? 'pointer' : 'default',
-                    background: isSelected ? '#1a3a1a' : '#111',
-                    fontSize: 12,
-                    transition: 'background 0.12s',
-                  }}
-                >
-                  {card.name || card.playerName || card.Name || cardId}
-                  {card.position && <div style={{ fontSize: 10, color: '#777' }}>{card.position}</div>}
-                </div>
-              );
-            })}
-            {activeSlot !== null && !isLocked && (
-              <div style={{ fontSize: 11, color: '#4caf50', marginTop: 6 }}>
-                ✅ Click a card above to place it in slot {FORMATION_SLOTS[myFormation]?.[activeSlot]?.label || activeSlot}
-              </div>
-            )}
+          )}
+
+          {/* Connected fans count */}
+          <div style={{ textAlign: 'center', color: '#445566', fontSize: 12, marginTop: 8 }}>
+            👥 {gs.allViewers?.length || 0} fans connected
           </div>
         </div>
       </div>
     );
   }
 
-  // ── Default lobby / spectator view ───────────────────────────────────────
-  // §3.1: Spectators see banner, QR codes, Watch Video — NOT the draft selection panel.
+  // ════════════════════════════════════════════════════════════════════════════
+  // SCREEN: REFEREE DASHBOARD
+  // ════════════════════════════════════════════════════════════════════════════
+  if (isReferee) {
+    return (
+      <div style={S.page}>
+        {notification && (
+          <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', background: '#333', color: '#fff', padding: '10px 20px', borderRadius: 8, zIndex: 9999, fontSize: 13 }}>
+            {notification}
+          </div>
+        )}
+        <div style={{ background: '#0d0d1f', borderBottom: '1px solid #1e1e3e', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontWeight: 800, color: '#4fc3f7' }}>🏟️ REFEREE PANEL</span>
+          <button style={S.btn('#333', false)} onClick={() => { setIsReferee(false); setScreen('login'); }}>← Exit</button>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+          <RefereeDashboard socket={socket} gameState={gs} isReferee={true} />
+        </div>
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // SCREEN: GAME (fan + team players in active match)
+  // ════════════════════════════════════════════════════════════════════════════
+  if (!gs) {
+    return (
+      <div style={{ ...S.page, alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>⏳</div>
+          <p style={{ color: '#4a5568' }}>Connecting to Arena…</p>
+        </div>
+      </div>
+    );
+  }
+
+  const qrCodes = (gs.qrCodes || []).filter(q => q && q.trim() !== '');
+
   return (
-    <div style={{ background: '#0a0a1a', minHeight: '100vh', color: '#eee', fontFamily: 'sans-serif', padding: 16 }}>
+    <div style={S.page}>
+      {notification && (
+        <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', background: '#1e1e3e', border: '1px solid #4fc3f7', color: '#fff', padding: '10px 20px', borderRadius: 8, zIndex: 9999, fontSize: 13, boxShadow: '0 4px 20px rgba(0,0,0,0.6)' }}>
+          {notification}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{ background: '#0d0d1f', borderBottom: '1px solid #1e1e3e', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <span style={{ fontSize: 16, fontWeight: 800, color: '#4fc3f7' }}>🏟️ RUHAGO N'INSHUTI</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {isPremium && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#f9a825', color: '#000', fontWeight: 700 }}>⭐ VIP</span>}
+          <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 10, background: myRole === 'team1' ? '#1565c0' : myRole === 'team2' ? '#b71c1c' : '#2a2a3e', color: '#fff' }}>
+            {myRole === 'team1' ? '🔵 Team 1' : myRole === 'team2' ? '🔴 Team 2' : '👁️ Spectator'}
+          </span>
+          <span style={{ fontSize: 12, color: '#4a5568' }}>{myName}</span>
+        </div>
+      </div>
+
       {/* Arena Banner */}
       {gs.arenaBanner && (
-        <div style={{ marginBottom: 16 }}>
-          <img src={gs.arenaBanner} alt="Arena Banner" style={{ width: '100%', maxHeight: 240, objectFit: 'cover', borderRadius: 10 }} />
-        </div>
+        <img src={gs.arenaBanner} alt="Banner" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', display: 'block', flexShrink: 0 }} onError={e => { e.target.style.display = 'none'; }} />
       )}
 
-      <h2 style={{ color: '#4fc3f7', textAlign: 'center', marginBottom: 8 }}>
-        ⚽ Welcome to the Arena
-      </h2>
-      <p style={{ textAlign: 'center', color: '#aaa', fontSize: 14, marginBottom: 20 }}>
-        {isTeamPlayer
-          ? `You are assigned as ${myRole === 'team1' ? 'Team 1' : 'Team 2'}. Waiting for the Referee to start the draft.`
-          : `You are in the lobby. The match will begin shortly.`}
-      </p>
+      <div style={{ flex: 1, overflowY: 'auto', padding: 14 }}>
 
-      {/* Watch Video button */}
-      {gs.youtubeLink && (
-        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <a
-            href={gs.youtubeLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-block',
-              padding: '12px 28px',
-              background: '#c62828',
-              color: '#fff',
-              borderRadius: 8,
-              textDecoration: 'none',
-              fontWeight: 700,
-              fontSize: 15,
-            }}
-          >
-            ▶️ Watch This Video
-          </a>
-        </div>
-      )}
-
-      {/* VIP Secure Live — only shown to the viewer themselves if premium. Hidden from regular fans viewing others. */}
-      {myViewer?.isPremium && myViewer?.secureLink && (
-        <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          <a
-            href={myViewer.secureLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-block',
-              padding: '10px 22px',
-              background: '#f9a825',
-              color: '#111',
-              borderRadius: 8,
-              textDecoration: 'none',
-              fontWeight: 700,
-              fontSize: 14,
-            }}
-          >
-            🔐 Secure VIP Live Stream
-          </a>
-        </div>
-      )}
-
-      {/* QR Codes */}
-      {gs.qrCodes && gs.qrCodes.some(q => q) && (
-        <div style={{ marginBottom: 24 }}>
-          <h3 style={{ color: '#f9a825', marginBottom: 10 }}>📱 QR Codes</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-            {gs.qrCodes.filter(q => q).map((qr, i) => (
-              <img
-                key={i}
-                src={qr}
-                alt={`QR Code ${i + 1}`}
-                style={{ width: 100, height: 100, borderRadius: 6, border: '2px solid #333' }}
-              />
+        {/* Video + QR row */}
+        {(gs.youtubeLink || qrCodes.length > 0) && (
+          <div style={{ display: 'flex', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+            {gs.youtubeLink && (
+              <a href={gs.youtubeLink} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#b71c1c', color: '#fff', padding: '9px 16px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>
+                ▶️ Watch Video
+              </a>
+            )}
+            {qrCodes.slice(0, 3).map((qr, i) => (
+              <div key={i} style={{ background: '#fff', borderRadius: 6, padding: 4, width: 64, height: 64, flexShrink: 0 }}>
+                <img src={qr} alt={`QR ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 4 }} onError={e => { e.target.parentElement.style.display = 'none'; }} />
+              </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* §3.1: Voting gate is BLIND — no invite shown when CLOSED */}
-      {gs.votingAllowed && (
-        <div style={{ textAlign: 'center', marginTop: 16 }}>
-          <button
-            onClick={() => setRoomPhase('VOTING')}
-            style={{
-              padding: '12px 28px',
-              background: '#1565c0',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              fontSize: 15,
-              fontWeight: 700,
-              cursor: 'pointer',
-            }}
-          >
-            🗳️ Go to Voting
-          </button>
+        {/* Scoreboard */}
+        <div style={{ ...S.card, textAlign: 'center', marginBottom: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#42a5f5' }}>{gs.team1Player?.name || 'Team 1'}</div>
+              <div style={{ fontSize: 11, color: '#4a5568' }}>{gs.team1Picks?.length || 0}/11 picks</div>
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#555' }}>VS</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#ef5350' }}>{gs.team2Player?.name || 'Team 2'}</div>
+              <div style={{ fontSize: 11, color: '#4a5568' }}>{gs.team2Picks?.length || 0}/11 picks</div>
+            </div>
+          </div>
+          <div style={{ marginTop: 8, display: 'flex', justifyContent: 'center', gap: 10 }}>
+            <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 10, background: gs.currentTurn === 'team1' ? '#1565c0' : '#b71c1c', color: '#fff' }}>
+              {gs.currentTurn === 'team1' ? '🔵 Team 1\'s turn' : '🔴 Team 2\'s turn'}
+            </span>
+            {isLocked && <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 10, background: '#2e7d32', color: '#fff' }}>🔒 Locked</span>}
+          </div>
         </div>
-      )}
-      {/* When votingAllowed is false: absolutely no voting prompt shown */}
+
+        {/* TEAM PLAYER: Draft + Tactics */}
+        {isTeamPlayer && gs.gameStarted && (
+          <>
+            {/* Formation picker */}
+            {!isLocked && (
+              <div style={{ ...S.card, marginBottom: 14 }}>
+                <div style={{ fontSize: 12, color: '#8899bb', marginBottom: 8, fontWeight: 700 }}>⚙️ FORMATION</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {FORMATIONS.map(f => (
+                    <button key={f} style={{ ...S.btn(f === myFormation ? '#00695c' : '#1e2940', false), padding: '6px 12px', fontSize: 12, border: f === myFormation ? '1px solid #4db6ac' : '1px solid #2a3550' }}
+                      onClick={() => handleSetFormation(f)}>{f}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Pitch + Available cards side by side */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 14, marginBottom: 14 }}>
+              {/* Tactical Pitch */}
+              <div>
+                <div style={{ fontSize: 12, color: '#8899bb', fontWeight: 700, marginBottom: 6 }}>
+                  {selectedCard
+                    ? `📌 Click a slot to place: ${myPicks.find(c => String(c.id) === String(selectedCard))?.name || selectedCard}`
+                    : '🗺️ TACTICAL PITCH'}
+                </div>
+                <TacticalPitch formation={myFormation} tactics={myTactics} myPicks={myPicks} onSlotClick={handleSlotClick}
+                  isLocked={isLocked} teamColor={isTeam1 ? '#1565c0' : '#b71c1c'} />
+              </div>
+
+              {/* My picks */}
+              <div>
+                <div style={{ fontSize: 12, color: '#8899bb', fontWeight: 700, marginBottom: 6 }}>🃏 MY PICKS ({myPicks.length}/11)</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 380, overflowY: 'auto' }}>
+                  {myPicks.map(card => {
+                    const isSelected = String(selectedCard) === String(card.id);
+                    return (
+                      <div key={card.id} onClick={() => !isLocked && setSelectedCard(isSelected ? null : String(card.id))}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 7, background: isSelected ? '#1a3a6e' : '#0d1117', border: `1px solid ${isSelected ? '#42a5f5' : '#1e2940'}`, cursor: isLocked ? 'default' : 'pointer', transition: 'all 0.15s' }}>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: isTeam1 ? '#1565c0' : '#b71c1c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+                          {card.rating || '?'}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: isSelected ? '#90caf9' : '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
+                          <div style={{ fontSize: 10, color: '#556' }}>{card.position}</div>
+                        </div>
+                        {isSelected && !isLocked && <span style={{ fontSize: 10, color: '#42a5f5' }}>→ place</span>}
+                      </div>
+                    );
+                  })}
+                  {myPicks.length === 0 && <div style={{ color: '#445566', fontSize: 12, padding: 8 }}>No picks yet. Draft below!</div>}
+                </div>
+              </div>
+            </div>
+
+            {/* Draft card pool */}
+            {!isLocked && gs.gameStarted && (
+              <div style={S.card}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, color: '#8899bb', fontWeight: 700 }}>🏪 DRAFT POOL ({gs.availableCards?.length || 0} left)</div>
+                  {isMyTurn
+                    ? <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 10, background: '#00695c', color: '#fff', fontWeight: 700 }}>✅ YOUR TURN</span>
+                    : <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 10, background: '#333', color: '#888' }}>⏳ Opponent's turn</span>}
+                </div>
+                {myPicks.length >= 11
+                  ? <div style={{ color: '#66bb6a', fontSize: 13, fontWeight: 700 }}>✅ Roster complete! Now arrange on the pitch.</div>
+                  : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8, maxHeight: 320, overflowY: 'auto' }}>
+                      {(gs.availableCards || []).map(card => (
+                        <div key={card.id} onClick={() => isMyTurn && myPicks.length < 11 && handlePickCard(card.id)}
+                          style={{ padding: '8px 10px', borderRadius: 8, background: isMyTurn ? '#0d1929' : '#0a0a14', border: `1px solid ${isMyTurn ? '#1e3a5e' : '#1a1a2a'}`, cursor: isMyTurn ? 'pointer' : 'not-allowed', opacity: isMyTurn ? 1 : 0.5, transition: 'all 0.15s' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#1e2940', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#90caf9', flexShrink: 0 }}>
+                              {card.rating || '?'}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
+                              <div style={{ fontSize: 10, color: '#556' }}>{card.position}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* SPECTATOR view */}
+        {!isTeamPlayer && gs.gameStarted && (
+          <div style={S.card}>
+            <h3 style={{ margin: '0 0 12px', color: '#f9a825', fontSize: 14 }}>👁️ Live Match View</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#42a5f5', marginBottom: 6 }}>🔵 {gs.team1Player?.name || 'Team 1'}</div>
+                {(gs.team1Picks || []).map((c, i) => (
+                  <div key={i} style={{ fontSize: 11, padding: '2px 0', borderBottom: '1px solid #1e1e3e', color: '#ccc' }}>{c.name} <span style={{ color: '#556' }}>{c.position}</span></div>
+                ))}
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#ef5350', marginBottom: 6 }}>🔴 {gs.team2Player?.name || 'Team 2'}</div>
+                {(gs.team2Picks || []).map((c, i) => (
+                  <div key={i} style={{ fontSize: 11, padding: '2px 0', borderBottom: '1px solid #1e1e3e', color: '#ccc' }}>{c.name} <span style={{ color: '#556' }}>{c.position}</span></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Voting Stage */}
+        {gs.votingAllowed && (
+          <div style={S.card}>
+            <h3 style={{ margin: '0 0 10px', color: '#f9a825', fontSize: 14 }}>🗳️ Cast Your Vote</h3>
+            <FanVotingStage socket={socket} gameState={gs} myTxId={myTxId} />
+          </div>
+        )}
+
+        {/* Lobby waiting state */}
+        {!gs.gameStarted && screen !== 'login' && (
+          <div style={{ textAlign: 'center', padding: 32 }}>
+            <div style={{ fontSize: 40, marginBottom: 10 }}>⏳</div>
+            <p style={{ color: '#4a5568', fontSize: 14 }}>Waiting for the Referee to start the match…</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
