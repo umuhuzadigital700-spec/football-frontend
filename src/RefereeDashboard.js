@@ -1,246 +1,579 @@
+// src/RefereeDashboard.js
 import React, { useState, useEffect, useCallback } from 'react';
 
+// ── Formation Slot Templates ───────────────────────────────────────────────────
+// Each formation maps slotIndex -> { label, top%, left% } for pitch rendering.
+const FORMATION_SLOTS = {
+  '4-4-2': [
+    { label: 'GK',  top: 88, left: 50 },
+    { label: 'LB',  top: 70, left: 15 },
+    { label: 'CB1', top: 70, left: 35 },
+    { label: 'CB2', top: 70, left: 65 },
+    { label: 'RB',  top: 70, left: 85 },
+    { label: 'LM',  top: 50, left: 15 },
+    { label: 'CM1', top: 50, left: 35 },
+    { label: 'CM2', top: 50, left: 65 },
+    { label: 'RM',  top: 50, left: 85 },
+    { label: 'ST1', top: 25, left: 35 },
+    { label: 'ST2', top: 25, left: 65 },
+  ],
+  '4-3-3': [
+    { label: 'GK',  top: 88, left: 50 },
+    { label: 'LB',  top: 70, left: 15 },
+    { label: 'CB1', top: 70, left: 35 },
+    { label: 'CB2', top: 70, left: 65 },
+    { label: 'RB',  top: 70, left: 85 },
+    { label: 'CM1', top: 50, left: 25 },
+    { label: 'CM2', top: 50, left: 50 },
+    { label: 'CM3', top: 50, left: 75 },
+    { label: 'LW',  top: 20, left: 20 },
+    { label: 'ST',  top: 15, left: 50 },
+    { label: 'RW',  top: 20, left: 80 },
+  ],
+  '3-5-2': [
+    { label: 'GK',  top: 88, left: 50 },
+    { label: 'CB1', top: 70, left: 25 },
+    { label: 'CB2', top: 70, left: 50 },
+    { label: 'CB3', top: 70, left: 75 },
+    { label: 'LWB', top: 52, left: 10 },
+    { label: 'CM1', top: 50, left: 30 },
+    { label: 'CM2', top: 50, left: 50 },
+    { label: 'CM3', top: 50, left: 70 },
+    { label: 'RWB', top: 52, left: 90 },
+    { label: 'ST1', top: 22, left: 35 },
+    { label: 'ST2', top: 22, left: 65 },
+  ],
+  '4-5-1': [
+    { label: 'GK',  top: 88, left: 50 },
+    { label: 'LB',  top: 70, left: 15 },
+    { label: 'CB1', top: 70, left: 35 },
+    { label: 'CB2', top: 70, left: 65 },
+    { label: 'RB',  top: 70, left: 85 },
+    { label: 'LM',  top: 50, left: 10 },
+    { label: 'CM1', top: 50, left: 30 },
+    { label: 'CM2', top: 50, left: 50 },
+    { label: 'CM3', top: 50, left: 70 },
+    { label: 'RM',  top: 50, left: 90 },
+    { label: 'ST',  top: 18, left: 50 },
+  ],
+  '5-3-2': [
+    { label: 'GK',  top: 88, left: 50 },
+    { label: 'LWB', top: 68, left: 10 },
+    { label: 'CB1', top: 70, left: 28 },
+    { label: 'CB2', top: 70, left: 50 },
+    { label: 'CB3', top: 70, left: 72 },
+    { label: 'RWB', top: 68, left: 90 },
+    { label: 'CM1', top: 48, left: 25 },
+    { label: 'CM2', top: 48, left: 50 },
+    { label: 'CM3', top: 48, left: 75 },
+    { label: 'ST1', top: 22, left: 35 },
+    { label: 'ST2', top: 22, left: 65 },
+  ],
+  '4-2-3-1': [
+    { label: 'GK',  top: 88, left: 50 },
+    { label: 'LB',  top: 72, left: 15 },
+    { label: 'CB1', top: 72, left: 35 },
+    { label: 'CB2', top: 72, left: 65 },
+    { label: 'RB',  top: 72, left: 85 },
+    { label: 'DM1', top: 57, left: 35 },
+    { label: 'DM2', top: 57, left: 65 },
+    { label: 'LAM', top: 38, left: 20 },
+    { label: 'CAM', top: 35, left: 50 },
+    { label: 'RAM', top: 38, left: 80 },
+    { label: 'ST',  top: 18, left: 50 },
+  ],
+};
+
+const FORMATIONS = Object.keys(FORMATION_SLOTS);
+
+// ── Mini Pitch Component ───────────────────────────────────────────────────────
+function MiniPitch({ formation, tactics, teamLabel, color }) {
+  const slots = FORMATION_SLOTS[formation] || FORMATION_SLOTS['4-4-2'];
+  return (
+    <div style={{
+      position: 'relative',
+      width: '100%',
+      paddingBottom: '130%',
+      background: 'linear-gradient(180deg, #1a6b2a 0%, #1e7a30 50%, #1a6b2a 100%)',
+      border: '2px solid #fff',
+      borderRadius: 8,
+      overflow: 'hidden',
+    }}>
+      {/* Pitch markings */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.4)' }} />
+        <div style={{ position: 'absolute', top: '44%', left: '25%', right: '25%', bottom: '3%', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 2 }} />
+        <div style={{ position: 'absolute', top: '2%', left: '25%', right: '25%', height: '10%', border: '1px solid rgba(255,255,255,0.3)' }} />
+        <div style={{
+          position: 'absolute', top: '46%', left: '50%',
+          transform: 'translate(-50%,-50%)',
+          width: '20%', paddingBottom: '20%',
+          borderRadius: '50%', border: '1px solid rgba(255,255,255,0.3)'
+        }} />
+      </div>
+      {/* Team label */}
+      <div style={{
+        position: 'absolute', top: 4, left: 0, right: 0,
+        textAlign: 'center', color: '#fff', fontSize: 10, fontWeight: 700,
+        textShadow: '0 1px 2px rgba(0,0,0,0.8)', zIndex: 5,
+      }}>
+        {teamLabel}
+      </div>
+      {/* Formation name */}
+      <div style={{
+        position: 'absolute', bottom: 4, left: 0, right: 0,
+        textAlign: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 9, zIndex: 5,
+      }}>
+        {formation}
+      </div>
+      {/* Player slots */}
+      {slots.map((slot, idx) => {
+        const player = tactics[idx];
+        return (
+          <div
+            key={idx}
+            style={{
+              position: 'absolute',
+              top: `${slot.top}%`,
+              left: `${slot.left}%`,
+              transform: 'translate(-50%, -50%)',
+              zIndex: 10,
+              textAlign: 'center',
+            }}
+          >
+            <div style={{
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              background: player ? color : 'rgba(255,255,255,0.15)',
+              border: `2px solid ${player ? '#fff' : 'rgba(255,255,255,0.3)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 7,
+              fontWeight: 700,
+              color: '#fff',
+              textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+              overflow: 'hidden',
+            }}>
+              {player
+                ? (player.name || player.playerName || player.Name || '?').substring(0, 4)
+                : slot.label.substring(0, 2)
+              }
+            </div>
+            {player && (
+              <div style={{
+                position: 'absolute', top: '100%', left: '50%',
+                transform: 'translateX(-50%)',
+                background: 'rgba(0,0,0,0.7)',
+                color: '#fff',
+                fontSize: 7,
+                padding: '1px 3px',
+                borderRadius: 2,
+                whiteSpace: 'nowrap',
+                maxWidth: 52,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                pointerEvents: 'none',
+              }}>
+                {(player.name || player.playerName || player.Name || '').substring(0, 8)}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// REFEREE DASHBOARD
+// ══════════════════════════════════════════════════════════════════════════════
 function RefereeDashboard({ socket, gameState, isReferee, activeSlot, setActiveSlot }) {
   const [saveStatus, setSaveStatus] = useState(null);
   const [saveError, setSaveError] = useState('');
+  const [ballotData, setBallotData] = useState(null);
+  const [viewingMatchId, setViewingMatchId] = useState(null);
 
   useEffect(() => {
-    function onSaveAck({ success, matchId, error }) {
+    function onSaveAck({ success, matchId, sessionName, error }) {
       if (success) {
         setSaveStatus('ok');
         setSaveError('');
+        console.log('[Ref] Session saved:', matchId, sessionName);
       } else {
         setSaveStatus('error');
         setSaveError(error || 'Unknown error');
       }
     }
-
+    function onMatchReadyAck({ success }) {
+      if (success) console.log('[Ref] Match locked as Ready.');
+    }
+    function onBallotData(data) {
+      setBallotData(data);
+    }
     socket.on('refSaveLiveSession_ack', onSaveAck);
-    return () => socket.off('refSaveLiveSession_ack');
+    socket.on('refMatchReady_ack', onMatchReadyAck);
+    socket.on('refBallotData', onBallotData);
+    return () => {
+      socket.off('refSaveLiveSession_ack', onSaveAck);
+      socket.off('refMatchReady_ack', onMatchReadyAck);
+      socket.off('refBallotData', onBallotData);
+    };
   }, [socket]);
 
   const handleAssignRole = useCallback((userId, role) => {
     socket.emit('refAssignRole', { userId, role });
   }, [socket]);
 
-  // 🟢 CRITICAL DEPLOYMENT FIX: Guard check is moved AFTER all React hooks have run
+  // ── CRITICAL: all hooks must be declared before any early returns ──────────
   if (!isReferee) return null;
 
   const gs = gameState;
+  const t1Tactics = gs.team1Tactics || {};
+  const t2Tactics = gs.team2Tactics || {};
+  const votingMatches = gs.votingMatches || [];
+  const typeAStats = gs.typeAStats || {};
+  const typeBStats = gs.typeBStats || {};
+  const savedSessions = gs.savedLiveSessions || [];
 
-  const handleStartDraft = () => {
-    socket.emit('refStartDraft');
-  };
-
-  const handleReset = () => {
-    setSaveStatus(null);
-    setSaveError('');
-    socket.emit('refReset');
-  };
-
+  const handleStartDraft = () => socket.emit('refStartDraft');
+  const handleReset = () => { setSaveStatus(null); setSaveError(''); socket.emit('refReset'); };
+  const handleRestart = () => { setSaveStatus(null); setSaveError(''); socket.emit('refRestart'); };
   const handleClearArena = () => {
-    if (!window.confirm('Clear the entire arena? This will disconnect all fans.')) return;
+    if (!window.confirm('⚠️ Clear the entire arena? This purges ALL data including saved sessions and disconnects all users.')) return;
     socket.emit('refClearArena');
   };
-
-  const handleLockMatch = () => {
-    socket.emit('refLockMatch');
+  const handleLockMatch = () => socket.emit('refLockMatch');
+  const handleMatchReady = () => {
+    if (!window.confirm('Lock the match as READY? Teams will no longer be able to move players.')) return;
+    socket.emit('refMatchReady');
   };
-
   const handleSaveSession = () => {
     setSaveStatus('saving');
     setSaveError('');
     socket.emit('refSaveLiveSession');
   };
+  const handleRefreshVoting = () => socket.emit('refRefreshVotingMatches');
+  const handleToggleVotingStatus = (matchId, currentStatus) => {
+    const newStatus = currentStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
+    socket.emit('refToggleVotingStatus', { matchId, newStatus });
+  };
+  const handleViewBallots = (matchId) => {
+    setViewingMatchId(matchId);
+    setBallotData(null);
+    socket.emit('refGetBallots', { matchId });
+  };
+
+  const panelStyle = {
+    background: '#1a1a2e',
+    border: '1px solid #333',
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 14,
+    color: '#eee',
+  };
+  const btnStyle = (bg, disabled) => ({
+    background: disabled ? '#555' : bg,
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    padding: '7px 14px',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    fontSize: 13,
+    fontWeight: 600,
+    opacity: disabled ? 0.6 : 1,
+    margin: '3px 4px 3px 0',
+  });
 
   return (
-    <div
-      style={{
-        background: '#f0f4ff',
-        border: '2px solid #3a4cb0',
-        borderRadius: 8,
-        padding: 16,
-        marginBottom: 24
-      }}
-    >
-      <h2 style={{ margin: '0 0 12px' }}>🎮 Referee Dashboard</h2>
+    <div style={{ maxWidth: 1100, margin: '0 auto', padding: 16, fontFamily: 'sans-serif', color: '#eee' }}>
+      <h2 style={{ color: '#4fc3f7', marginBottom: 16 }}>🏟️ Referee Master Dashboard</h2>
 
-      <section style={{ marginBottom: 16 }}>
-        <h3 style={{ marginBottom: 8 }}>Draft Controls</h3>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            onClick={handleStartDraft}
-            disabled={gs.gameStarted}
-            style={{
-              padding: '8px 16px',
-              background: '#2e7d32',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 4,
-              cursor: gs.gameStarted ? 'default' : 'pointer',
-              opacity: gs.gameStarted ? 0.5 : 1
-            }}
-          >
-            ▶ Start Draft
+      {/* ── LOBBY CONTROLS ── */}
+      <div style={panelStyle}>
+        <h3 style={{ margin: '0 0 10px', color: '#f9a825' }}>⚙️ Arena Controls</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <button style={btnStyle('#1565c0', false)} onClick={handleStartDraft}>
+            🚀 Start Draft
           </button>
-
-          <button
-            onClick={handleReset}
-            style={{
-              padding: '8px 16px',
-              background: '#e65100',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer'
-            }}
-          >
-            🔄 Reset Draft
+          <button style={btnStyle('#6a1b9a', false)} onClick={handleRestart}>
+            🔄 Restart (Same Players)
           </button>
-
-          <button
-            onClick={handleLockMatch}
-            disabled={gs.matchLocked || !gs.gameStarted}
-            style={{
-              padding: '8px 16px',
-              background: '#1565c0',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer',
-              opacity: gs.matchLocked || !gs.gameStarted ? 0.5 : 1
-            }}
-          >
-            🔒 Lock Match
+          <button style={btnStyle('#4527a0', false)} onClick={handleReset}>
+            👥 Reset (New Players)
           </button>
-
-          <button
-            onClick={handleClearArena}
-            style={{
-              padding: '8px 16px',
-              background: '#b71c1c',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer'
-            }}
-          >
-            💥 Clear Arena
+          <button style={btnStyle('#b71c1c', false)} onClick={handleClearArena}>
+            💥 Clear Arena (Full Purge)
           </button>
         </div>
+      </div>
 
-        <div style={{ marginTop: 10 }}>
-          <span style={{ marginRight: 16 }}>
-            Status: <strong>{gs.gameStarted ? (gs.matchLocked ? '🔒 Locked' : '🟢 Active') : '⏸ Lobby'}</strong>
-          </span>
-          <span>
-            Turn: <strong>{gs.currentTurn}</strong>
-          </span>
-        </div>
-      </section>
-
-      <section
-        style={{
-          marginBottom: 16,
-          background: '#fff',
-          borderRadius: 6,
-          padding: 12,
-          border: '1px solid #c3cce8'
-        }}
-      >
-        <h3 style={{ margin: '0 0 8px' }}>Save to Voting Engine</h3>
-        <p style={{ margin: '0 0 8px', fontSize: 13, color: '#555' }}>
-          Saves the current locked canvas as a votable match. Does NOT reset the draft.
-        </p>
-
-        <button
-          onClick={handleSaveSession}
-          disabled={!gs.matchLocked || saveStatus === 'saving'}
-          style={{
-            padding: '8px 18px',
-            background: '#6a1b9a',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 4,
-            cursor: 'pointer',
-            opacity: !gs.matchLocked || saveStatus === 'saving' ? 0.5 : 1
-          }}
-        >
-          {saveStatus === 'saving' ? '⏳ Saving…' : '💾 Save Live Session'}
-        </button>
-
-        {saveStatus === 'ok' && (
-          <span style={{ marginLeft: 12, color: '#2e7d32', fontWeight: 'bold' }}>
-            ✅ Saved successfully!
-          </span>
-        )}
-
-        {saveStatus === 'error' && (
-          <span style={{ marginLeft: 12, color: '#c62828', fontWeight: 'bold' }}>
-            ❌ Error: {saveError}
-          </span>
-        )}
-
-        {!gs.matchLocked && (
-          <p style={{ margin: '8px 0 0', fontSize: 12, color: '#888' }}>
-            Lock the match first to enable saving.
+      {/* ── MATCH LOCK / READY ── */}
+      {gs.gameStarted && (
+        <div style={panelStyle}>
+          <h3 style={{ margin: '0 0 10px', color: '#f9a825' }}>🔒 Match Gate Controls</h3>
+          <p style={{ fontSize: 12, color: '#aaa', margin: '0 0 8px' }}>
+            Lock Match freezes formations. Match Ready applies full positional lockout and enables Save.
           </p>
-        )}
-      </section>
-
-      <section style={{ marginBottom: 16 }}>
-        <h3>Viewer Management ({gs.allViewers?.length || 0} connected)</h3>
-        <div
-          style={{
-            maxHeight: 200,
-            overflowY: 'auto',
-            border: '1px solid #ccc',
-            borderRadius: 4,
-            padding: 8
-          }}
-        >
-          {(gs.allViewers || []).map(v => (
-            <div
-              key={v.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '4px 0',
-                borderBottom: '1px solid #eee'
-              }}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <button
+              style={btnStyle('#e65100', gs.matchLocked)}
+              onClick={handleLockMatch}
+              disabled={gs.matchLocked}
             >
-              <span style={{ flex: 1 }}>
-                {v.name} <small style={{ color: '#888' }}>({v.role})</small>
-              </span>
-              <button onClick={() => handleAssignRole(v.id, 'team1')} style={{ padding: '2px 8px', fontSize: 12 }}>
-                T1
-              </button>
-              <button onClick={() => handleAssignRole(v.id, 'team2')} style={{ padding: '2px 8px', fontSize: 12 }}>
-                T2
-              </button>
-              <button onClick={() => handleAssignRole(v.id, 'spectator')} style={{ padding: '2px 8px', fontSize: 12 }}>
-                Spec
-              </button>
+              🔒 {gs.matchLocked ? 'Match Locked' : 'Lock Match'}
+            </button>
+            <button
+              style={btnStyle('#2e7d32', gs.matchReady)}
+              onClick={handleMatchReady}
+              disabled={gs.matchReady}
+            >
+              ✅ {gs.matchReady ? 'Match Is Ready' : 'Mark Match Ready'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── SAVE SESSION ── */}
+      {gs.gameStarted && (
+        <div style={panelStyle}>
+          <h3 style={{ margin: '0 0 6px', color: '#f9a825' }}>💾 Save Live Session for Voting</h3>
+          <p style={{ fontSize: 12, color: '#aaa', margin: '0 0 8px' }}>
+            Saves the locked canvas as a Type A voting match (MATCH-LIVE-NNN).
+            Named automatically: <em>"CoachA / Team 1 vs CoachB / Team 2"</em>.
+          </p>
+          <button
+            style={btnStyle('#00838f', !gs.matchReady || saveStatus === 'saving')}
+            onClick={handleSaveSession}
+            disabled={!gs.matchReady || saveStatus === 'saving'}
+          >
+            {saveStatus === 'saving' ? '⏳ Saving...' : '💾 Save Live Session'}
+          </button>
+          {saveStatus === 'ok' && <span style={{ color: '#66bb6a', marginLeft: 10, fontSize: 13 }}>✅ Saved successfully!</span>}
+          {saveStatus === 'error' && <span style={{ color: '#ef5350', marginLeft: 10, fontSize: 13 }}>❌ {saveError}</span>}
+          {!gs.matchReady && (
+            <p style={{ color: '#ff8f00', fontSize: 12, marginTop: 6 }}>
+              ⚠️ Mark match as Ready first.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── REAL-TIME SIDE-BY-SIDE PITCH ── */}
+      {gs.gameStarted && (
+        <div style={panelStyle}>
+          <h3 style={{ margin: '0 0 12px', color: '#f9a825' }}>
+            ⚽ Live Tactical Pitch — Side-by-Side
+            {gs.matchReady && <span style={{ color: '#66bb6a', fontSize: 12, marginLeft: 10 }}>🔒 LOCKED</span>}
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#42a5f5', marginBottom: 6 }}>
+                🔵 {gs.team1Player?.name || 'Team 1'} — {gs.team1Picks?.length || 0}/11 picks
+              </div>
+              <MiniPitch
+                formation={gs.team1Formation || '4-4-2'}
+                tactics={t1Tactics}
+                teamLabel={gs.team1Player?.name || 'Team 1'}
+                color="#1565c0"
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#ef5350', marginBottom: 6 }}>
+                🔴 {gs.team2Player?.name || 'Team 2'} — {gs.team2Picks?.length || 0}/11 picks
+              </div>
+              <MiniPitch
+                formation={gs.team2Formation || '4-4-2'}
+                tactics={t2Tactics}
+                teamLabel={gs.team2Player?.name || 'Team 2'}
+                color="#b71c1c"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DRAFT PICK SUMMARY ── */}
+      {gs.gameStarted && (
+        <div style={panelStyle}>
+          <h3 style={{ margin: '0 0 10px', color: '#f9a825' }}>🃏 Draft Pick Summary</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 12, color: '#42a5f5', fontWeight: 700, marginBottom: 4 }}>
+                {gs.team1Player?.name || 'Team 1'} — Picks: {gs.team1Picks?.length || 0}/11
+              </div>
+              <div style={{ fontSize: 11, color: '#aaa' }}>Formation: {gs.team1Formation}</div>
+              {(gs.team1Picks || []).map((c, i) => (
+                <div key={i} style={{ fontSize: 11, padding: '2px 0', borderBottom: '1px solid #333' }}>
+                  {c.name || c.playerName || c.Name || c.id}
+                </div>
+              ))}
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: '#ef5350', fontWeight: 700, marginBottom: 4 }}>
+                {gs.team2Player?.name || 'Team 2'} — Picks: {gs.team2Picks?.length || 0}/11
+              </div>
+              <div style={{ fontSize: 11, color: '#aaa' }}>Formation: {gs.team2Formation}</div>
+              {(gs.team2Picks || []).map((c, i) => (
+                <div key={i} style={{ fontSize: 11, padding: '2px 0', borderBottom: '1px solid #333' }}>
+                  {c.name || c.playerName || c.Name || c.id}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONNECTED USERS ── */}
+      <div style={panelStyle}>
+        <h3 style={{ margin: '0 0 10px', color: '#f9a825' }}>👥 Connected Users ({(gs.allViewers || []).length})</h3>
+        {(gs.allViewers || []).length === 0 && (
+          <div style={{ fontSize: 12, color: '#777' }}>No fans connected yet.</div>
+        )}
+        {(gs.allViewers || []).map(v => (
+          <div key={v.id} style={{
+            display: 'flex', alignItems: 'center', flexWrap: 'wrap',
+            gap: 8, padding: '6px 0', borderBottom: '1px solid #333',
+          }}>
+            <span style={{ fontSize: 13, minWidth: 120 }}>{v.name}</span>
+            <span style={{
+              fontSize: 11, padding: '2px 7px', borderRadius: 12,
+              background: v.role === 'team1' ? '#1565c0' : v.role === 'team2' ? '#b71c1c' : '#444',
+              color: '#fff',
+            }}>
+              {v.role}
+            </span>
+            {v.isPremium && <span style={{ fontSize: 10, color: '#ffd700' }}>⭐ VIP</span>}
+            {/* Role assignment — only in LOBBY */}
+            {!gs.gameStarted && (
+              <>
+                <button style={btnStyle('#1565c0', false)} onClick={() => handleAssignRole(v.id, 'team1')}>→ T1</button>
+                <button style={btnStyle('#b71c1c', false)} onClick={() => handleAssignRole(v.id, 'team2')}>→ T2</button>
+                <button style={btnStyle('#555', false)} onClick={() => handleAssignRole(v.id, 'spectator')}>Spectator</button>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ── VOTING MANAGEMENT ── */}
+      <div style={panelStyle}>
+        <h3 style={{ margin: '0 0 10px', color: '#f9a825' }}>🗳️ Voting Match Management</h3>
+        <p style={{ fontSize: 12, color: '#aaa', margin: '0 0 8px' }}>
+          Toggle matches OPEN to allow fans to vote. Saved sessions persist across resets.
+        </p>
+        <button style={btnStyle('#00695c', false)} onClick={handleRefreshVoting}>🔄 Refresh Matches</button>
+        <div style={{ marginTop: 12 }}>
+          {votingMatches.length === 0 && (
+            <div style={{ fontSize: 12, color: '#777' }}>No voting matches yet. Save a live session or refresh.</div>
+          )}
+          {votingMatches.map(m => {
+            const isOpen = m.status === 'OPEN';
+            const aStats = typeAStats[m.matchId];
+            const bStats = typeBStats[m.matchId];
+            return (
+              <div key={m.matchId} style={{
+                background: '#111',
+                border: `1px solid ${isOpen ? '#2e7d32' : '#333'}`,
+                borderRadius: 6,
+                padding: 10,
+                marginBottom: 8,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
+                  <span style={{
+                    fontSize: 10, padding: '2px 6px', borderRadius: 10,
+                    background: m.matchType === 'A' ? '#1565c0' : '#6a1b9a',
+                    color: '#fff', fontWeight: 700,
+                  }}>
+                    Type {m.matchType}
+                  </span>
+                  <span style={{ fontSize: 11, color: '#aaa', fontFamily: 'monospace' }}>{m.matchId}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>{m.name}</span>
+                  <span style={{
+                    fontSize: 11, padding: '2px 8px', borderRadius: 10,
+                    background: isOpen ? '#2e7d32' : '#b71c1c',
+                    color: '#fff',
+                  }}>
+                    {isOpen ? '🟢 OPEN' : '🔴 CLOSED'}
+                  </span>
+                  <button
+                    style={btnStyle(isOpen ? '#b71c1c' : '#2e7d32', false)}
+                    onClick={() => handleToggleVotingStatus(m.matchId, m.status)}
+                  >
+                    {isOpen ? 'Close' : 'Open'}
+                  </button>
+                  <button style={btnStyle('#37474f', false)} onClick={() => handleViewBallots(m.matchId)}>
+                    📊 View Ballots
+                  </button>
+                </div>
+                {/* Type A stats: team vote counters */}
+                {m.matchType === 'A' && aStats && (
+                  <div style={{ fontSize: 12, color: '#aaa', display: 'flex', gap: 16 }}>
+                    <span>🔵 Team 1 Votes: <strong style={{ color: '#42a5f5' }}>{aStats.team1Votes}</strong></span>
+                    <span>🔴 Team 2 Votes: <strong style={{ color: '#ef5350' }}>{aStats.team2Votes}</strong></span>
+                  </div>
+                )}
+                {/* Type B stats: per-participant averages */}
+                {m.matchType === 'B' && bStats && Object.keys(bStats).length > 0 && (
+                  <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>
+                    {Object.entries(bStats).map(([name, avg]) => (
+                      <span key={name} style={{ marginRight: 12 }}>
+                        <strong style={{ color: '#ce93d8' }}>{name}</strong>: {avg}/10
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── SAVED LIVE SESSIONS LIST ── */}
+      {savedSessions.length > 0 && (
+        <div style={panelStyle}>
+          <h3 style={{ margin: '0 0 10px', color: '#f9a825' }}>📁 Saved Live Sessions ({savedSessions.length})</h3>
+          {savedSessions.map(s => (
+            <div key={s.matchId} style={{
+              display: 'flex', gap: 10, flexWrap: 'wrap',
+              padding: '6px 0', borderBottom: '1px solid #222', fontSize: 12,
+            }}>
+              <span style={{ fontFamily: 'monospace', color: '#80cbc4' }}>{s.matchId}</span>
+              <span style={{ flex: 1 }}>{s.name}</span>
+              <span style={{ color: '#aaa' }}>T1: {(s.team1Picks || []).length} | T2: {(s.team2Picks || []).length}</span>
+              <span style={{ color: s.status === 'OPEN' ? '#66bb6a' : '#ef5350' }}>{s.status}</span>
             </div>
           ))}
         </div>
-      </section>
+      )}
 
-      {gs.gameStarted && (
-        <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div style={{ background: '#e3f2fd', borderRadius: 6, padding: 10 }}>
-            <strong>Team 1 — {gs.team1Player?.name || 'Unassigned'}</strong>
-            <p style={{ margin: '4px 0', fontSize: 12 }}>Picks: {gs.team1Picks?.length || 0} / 11</p>
-            <p style={{ margin: 0, fontSize: 12 }}>Formation: {gs.team1Formation}</p>
-          </div>
-
-          <div style={{ background: '#fce4ec', borderRadius: 6, padding: 10 }}>
-            <strong>Team 2 — {gs.team2Player?.name || 'Unassigned'}</strong>
-            <p style={{ margin: '4px 0', fontSize: 12 }}>Picks: {gs.team2Picks?.length || 0} / 11</p>
-            <p style={{ margin: 0, fontSize: 12 }}>Formation: {gs.team2Formation}</p>
-          </div>
-        </section>
+      {/* ── BALLOT VIEWER ── */}
+      {viewingMatchId && (
+        <div style={panelStyle}>
+          <h3 style={{ margin: '0 0 10px', color: '#f9a825' }}>📊 Ballot Data — {viewingMatchId}</h3>
+          <button style={btnStyle('#555', false)} onClick={() => setViewingMatchId(null)}>✕ Close</button>
+          {!ballotData && <div style={{ fontSize: 12, color: '#aaa', marginTop: 8 }}>⏳ Loading ballots…</div>}
+          {ballotData && (
+            <div style={{ marginTop: 10, maxHeight: 320, overflowY: 'auto' }}>
+              {(!ballotData.ballots || ballotData.ballots.length === 0) ? (
+                <div style={{ fontSize: 12, color: '#777' }}>No ballots submitted yet.</div>
+              ) : (
+                ballotData.ballots.map((b, i) => (
+                  <div key={i} style={{ fontSize: 11, padding: '4px 0', borderBottom: '1px solid #222', color: '#ccc' }}>
+                    <span style={{ fontFamily: 'monospace', color: '#80cbc4' }}>{b.txId?.substring(0, 8)}…</span>
+                    {b.teamVote && <span style={{ marginLeft: 10 }}>🗳 {b.teamVote}</span>}
+                    {b.scores && Object.keys(b.scores).length > 0 && (
+                      <span style={{ marginLeft: 10, color: '#aaa' }}>
+                        {Object.entries(b.scores).map(([n, s]) => `${n}: ${s}/10`).join(' | ')}
+                      </span>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
