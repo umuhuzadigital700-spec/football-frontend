@@ -293,7 +293,6 @@ function App() {
   const myViewer = gameState.allViewers?.find(v => v.txId === myTxId);
   const myRole = myViewer?.role || 'spectator';
   const isTeamPlayer = myRole === 'team1' || myRole === 'team2';
-  const isSpectator = !isRef && !isTeamPlayer;
 
   // ── Referee view ──────────────────────────────────────────────────────────
   if (isRef) {
