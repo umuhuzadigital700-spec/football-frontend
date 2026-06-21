@@ -202,13 +202,33 @@ function FanMiniPitch({ formation, tactics, teamLabel, color }) {
 // FAN VOTING STAGE
 // ══════════════════════════════════════════════════════════════════════════════
 function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
-  // ── ALL hooks declared unconditionally at the top — before any early return ──
+  // ── ALL hooks declared unconditionally at the very top — before any early return ──
+
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [teamVote, setTeamVote] = useState(null);
   const [scores, setScores] = useState({});
   const [submitStatus, setSubmitStatus] = useState(null);
   const [submitError, setSubmitError] = useState("");
 
+  // ── Derived state references — computed unconditionally ───────────────────
+  const gs = gameState;
+  const votingMatches = gs.votingMatches || [];
+  const voteRegistry = gs.voteRegistry || {};
+  const votingMode = gs.votingMode;
+  const typeAStats = gs.typeAStats || {};
+  const typeBStats = gs.typeBStats || {};
+
+  // ── Filter matches by current voting mode (unconditional derivation) ──────
+  const visibleMatches = isReferee
+    ? votingMatches
+    : votingMatches.filter(m => {
+        if (!votingMode || votingMode === 'BOTH') return true;
+        return m.matchType === votingMode;
+      });
+
+  const openMatches = visibleMatches.filter(m => m.status === 'OPEN');
+
+  // ── useEffect #1: Socket ballot result listener ───────────────────────────
   useEffect(() => {
     function onBallotResult({ success, error }) {
       if (success) {
@@ -235,19 +255,23 @@ function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
     return () => socket.off("ballotResult", onBallotResult);
   }, [socket]);
 
-  // ── Derived state references (safe to compute unconditionally) ────────────
-  const gs = gameState;
-  const votingMatches = gs.votingMatches || [];
-  const voteRegistry = gs.voteRegistry || {};
-  const votingMode = gs.votingMode;
-  const typeAStats = gs.typeAStats || {};
-  const typeBStats = gs.typeBStats || {};
+  // ── useEffect #2: Ghost Action Panel Re-Sync ──────────────────────────────
+  // If the currently selected match gets closed/removed by the referee,
+  // automatically clear the evaluation panel so the fan is not stuck.
+  useEffect(() => {
+    if (!selectedMatch) return;
+    const stillOpen = openMatches.some(m => m.matchId === selectedMatch.matchId);
+    if (!stillOpen) {
+      setSelectedMatch(null);
+    }
+  }, [openMatches, selectedMatch]);
 
-  // ── All useCallback hooks declared unconditionally BEFORE any early return ─
+  // ── useCallback: handleScoreChange ───────────────────────────────────────
   const handleScoreChange = useCallback((name, val) => {
     setScores(prev => ({ ...prev, [name]: val }));
   }, []);
 
+  // ── useCallback: handleSelectMatch ───────────────────────────────────────
   const handleSelectMatch = useCallback((m) => {
     setSelectedMatch(m);
     setTeamVote(null);
@@ -256,16 +280,29 @@ function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
     setSubmitError("");
   }, []);
 
-  const handleSubmit = useCallback(() => {
+  // ── useCallback: handleSubmit ─────────────────────────────────────────────
+  // Fix #3: Instantly set "pending" to block double-tap spam on slow connections.
+  // Fix #2: Loop allParticipants before emitting — fill any slider left at
+  //         default position (not yet in scores state) with baseline value 5.
+  const handleSubmit = useCallback((allParticipants) => {
     if (!selectedMatch || !myTxId) return;
+    // Double-tap blocker: bail immediately if already pending or submitted
+    if (submitStatus === "pending" || submitStatus === "success") return;
+
     const alreadyVoted = (voteRegistry[selectedMatch.matchId] || []).includes(myTxId);
     if (alreadyVoted) {
       setSubmitStatus("error");
       setSubmitError("You have already voted on this match.");
       return;
     }
+
+    // Instantly lock UI to prevent repeat-clicks
+    setSubmitStatus("pending");
+    setSubmitError("");
+
     if (selectedMatch.matchType === 'A') {
       if (!teamVote) {
+        setSubmitStatus(null);
         setSubmitError("Please select which team you think won.");
         return;
       }
@@ -276,14 +313,23 @@ function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
         matchType: 'A',
       });
     } else {
+      // Fix #2: Backfill any participant whose slider was never touched with 5
+      const finalScores = { ...scores };
+      if (Array.isArray(allParticipants)) {
+        allParticipants.forEach(p => {
+          if (finalScores[p.name] === undefined || finalScores[p.name] === null) {
+            finalScores[p.name] = 5;
+          }
+        });
+      }
       socket.emit("fanSubmitBallot", {
         txId: myTxId,
         matchId: selectedMatch.matchId,
-        scores,
+        scores: finalScores,
         matchType: 'B',
       });
     }
-  }, [selectedMatch, myTxId, teamVote, scores, voteRegistry, socket]);
+  }, [selectedMatch, myTxId, teamVote, scores, voteRegistry, socket, submitStatus]);
 
   // ── cardStyle helper (plain function, not a hook — safe anywhere) ─────────
   const cardStyle = (isSelected) => ({
@@ -306,15 +352,8 @@ function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
     );
   }
 
-  // ── Filter matches by current voting mode ─────────────────────────────────
-  const visibleMatches = isReferee
-    ? votingMatches
-    : votingMatches.filter(m => {
-        if (!votingMode || votingMode === 'BOTH') return true;
-        return m.matchType === votingMode;
-      });
-
-  const openMatches = visibleMatches.filter(m => m.status === 'OPEN');
+  // ── Pending / disabled state helper ──────────────────────────────────────
+  const isPending = submitStatus === "pending";
 
   return (
     <div style={{ fontFamily: "sans-serif", color: "#eee", maxWidth: 900, margin: "0 auto", padding: 12 }}>
@@ -392,6 +431,10 @@ function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
                   Type {selectedMatch.matchType}
                 </span>
                 <span style={{ fontSize: 11, fontFamily: "monospace", color: "#80cbc4" }}>{selectedMatch.matchId}</span>
+                {/* Fix #3: Pending indicator shown in header */}
+                {isPending && (
+                  <span style={{ fontSize: 11, color: "#f9a825", marginLeft: "auto" }}>⏳ Submitting…</span>
+                )}
               </div>
               <h3 style={{ margin: "0 0 14px", fontSize: 15, color: "#fff" }}>{selectedMatch.name}</h3>
 
@@ -433,42 +476,53 @@ function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
                           Who won the tactical battle?
                         </div>
                         <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+                          {/* Fix #3: buttons disabled while pending */}
                           <button
-                            onClick={() => setTeamVote("team1")}
+                            onClick={() => !isPending && setTeamVote("team1")}
+                            disabled={isPending}
                             style={{
                               flex: 1, padding: "12px", borderRadius: 8, border: "2px solid",
                               borderColor: teamVote === "team1" ? "#42a5f5" : "#333",
                               background: teamVote === "team1" ? "#1565c0" : "#1a1a2e",
-                              color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13,
+                              color: "#fff", fontWeight: 700,
+                              cursor: isPending ? "not-allowed" : "pointer",
+                              opacity: isPending ? 0.5 : 1,
+                              fontSize: 13,
                             }}
                           >
                             🔵 {selectedMatch.coach1 || 'Team 1'}
                           </button>
                           <button
-                            onClick={() => setTeamVote("team2")}
+                            onClick={() => !isPending && setTeamVote("team2")}
+                            disabled={isPending}
                             style={{
                               flex: 1, padding: "12px", borderRadius: 8, border: "2px solid",
                               borderColor: teamVote === "team2" ? "#ef5350" : "#333",
                               background: teamVote === "team2" ? "#b71c1c" : "#1a1a2e",
-                              color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13,
+                              color: "#fff", fontWeight: 700,
+                              cursor: isPending ? "not-allowed" : "pointer",
+                              opacity: isPending ? 0.5 : 1,
+                              fontSize: 13,
                             }}
                           >
                             🔴 {selectedMatch.coach2 || 'Team 2'}
                           </button>
                         </div>
                         {submitError && <div style={{ color: "#ef5350", fontSize: 12, marginBottom: 8 }}>❌ {submitError}</div>}
+                        {/* Fix #3: submit button disabled while pending */}
                         <button
-                          onClick={handleSubmit}
-                          disabled={!teamVote}
+                          onClick={() => handleSubmit(null)}
+                          disabled={!teamVote || isPending}
                           style={{
                             width: "100%", padding: "12px", borderRadius: 8,
-                            background: teamVote ? "#2e7d32" : "#333",
+                            background: teamVote && !isPending ? "#2e7d32" : "#333",
                             color: "#fff", border: "none", fontWeight: 700,
-                            fontSize: 14, cursor: teamVote ? "pointer" : "not-allowed",
-                            opacity: teamVote ? 1 : 0.6,
+                            fontSize: 14,
+                            cursor: teamVote && !isPending ? "pointer" : "not-allowed",
+                            opacity: teamVote && !isPending ? 1 : 0.6,
                           }}
                         >
-                          ✅ Submit Vote
+                          {isPending ? "⏳ Submitting…" : "✅ Submit Vote"}
                         </button>
                       </>
                     ) : hasVoted || submitStatus === "success" ? (
@@ -513,21 +567,26 @@ function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
                                 role={p.role}
                                 value={scores[p.name] !== undefined ? scores[p.name] : 5}
                                 onChange={handleScoreChange}
-                                disabled={false}
+                                disabled={isPending}
                               />
                             ))
                           )}
                         </div>
                         {submitError && <div style={{ color: "#ef5350", fontSize: 12, margin: "8px 0" }}>❌ {submitError}</div>}
+                        {/* Fix #2 + #3: pass allParticipants; disable while pending */}
                         <button
-                          onClick={handleSubmit}
+                          onClick={() => handleSubmit(allParticipants)}
+                          disabled={isPending}
                           style={{
                             width: "100%", padding: "12px", borderRadius: 8, marginTop: 10,
-                            background: "#2e7d32", color: "#fff", border: "none",
-                            fontWeight: 700, fontSize: 14, cursor: "pointer",
+                            background: isPending ? "#555" : "#2e7d32",
+                            color: "#fff", border: "none",
+                            fontWeight: 700, fontSize: 14,
+                            cursor: isPending ? "not-allowed" : "pointer",
+                            opacity: isPending ? 0.6 : 1,
                           }}
                         >
-                          ✅ Submit Scores
+                          {isPending ? "⏳ Submitting…" : "✅ Submit Scores"}
                         </button>
                       </>
                     ) : (
