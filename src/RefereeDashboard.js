@@ -84,7 +84,6 @@ const FORMATION_SLOTS = {
   ],
 };
 
-const FORMATIONS = Object.keys(FORMATION_SLOTS);
 
 // ── Mini Pitch Component ───────────────────────────────────────────────────────
 function MiniPitch({ formation, tactics, teamLabel, color }) {
