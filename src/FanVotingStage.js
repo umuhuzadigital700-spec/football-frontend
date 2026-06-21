@@ -15,21 +15,6 @@ function parseTypeBPlayers(str) {
     });
 }
 
-// ── Type A tactics parser — builds player list from tactics map ───────────────
-function parseTypeAPlayers(tacticsInput) {
-  let tactics = tacticsInput;
-  if (typeof tacticsInput === "string") {
-    try { tactics = JSON.parse(tacticsInput); } catch { return []; }
-  }
-  if (!tactics || typeof tactics !== "object") return [];
-  return Object.values(tactics)
-    .filter(Boolean)
-    .map(p => ({
-      name: p.name || p.playerName || p.Name || "Unknown",
-      role: p.position || p.pos || p.role || "",
-    }));
-}
-
 // ── Score slider component (Type B) ──────────────────────────────────────────
 function ScoreInput({ name, role, value, onChange, disabled }) {
   return (
@@ -236,10 +221,20 @@ function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
 
   const gs = gameState;
   const votingMatches = gs.votingMatches || [];
-  const voteRegistry = gs.voteRegistry || {};
+  const voteRegistry = useMemo(() => gs.voteRegistry || {}, [gs.voteRegistry]);
   const votingMode = gs.votingMode;
   const typeAStats = gs.typeAStats || {};
   const typeBStats = gs.typeBStats || {};
+
+  // §3.1 Blind Voting Gate: if not allowed, show nothing to fans
+  if (!isReferee && !gs.votingAllowed) {
+    return (
+      <div style={{ textAlign: "center", padding: 40, color: "#777", fontFamily: "sans-serif" }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>🏟️</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: "#aaa" }}>Waiting for the Arena to open…</div>
+      </div>
+    );
+  }
 
   // Filter matches by current voting mode (§3.1: fan only sees opened mode)
   const visibleMatches = isReferee
@@ -291,16 +286,6 @@ function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
       });
     }
   }, [selectedMatch, myTxId, teamVote, scores, voteRegistry, socket]);
-
-  // §3.1 Blind Voting Gate: if not allowed, show nothing to fans
-  if (!isReferee && !gs.votingAllowed) {
-    return (
-      <div style={{ textAlign: "center", padding: 40, color: "#777", fontFamily: "sans-serif" }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>🏟️</div>
-        <div style={{ fontSize: 16, fontWeight: 600, color: "#aaa" }}>Waiting for the Arena to open…</div>
-      </div>
-    );
-  }
 
   const cardStyle = (isSelected) => ({
     background: isSelected ? "#1a2a3a" : "#111",
