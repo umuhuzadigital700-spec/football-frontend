@@ -1,5 +1,5 @@
 // src/FanVotingStage.js
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 // ── Type B player list parser ─────────────────────────────────────────────────
 function parseTypeBPlayers(str) {
@@ -202,6 +202,7 @@ function FanMiniPitch({ formation, tactics, teamLabel, color }) {
 // FAN VOTING STAGE
 // ══════════════════════════════════════════════════════════════════════════════
 function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
+  // ── ALL hooks declared unconditionally at the top — before any early return ──
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [teamVote, setTeamVote] = useState(null);
   const [scores, setScores] = useState({});
@@ -234,6 +235,7 @@ function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
     return () => socket.off("ballotResult", onBallotResult);
   }, [socket]);
 
+  // ── Derived state references (safe to compute unconditionally) ────────────
   const gs = gameState;
   const votingMatches = gs.votingMatches || [];
   const voteRegistry = gs.voteRegistry || {};
@@ -241,26 +243,7 @@ function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
   const typeAStats = gs.typeAStats || {};
   const typeBStats = gs.typeBStats || {};
 
-  // §3.1 Blind Voting Gate: if not allowed, show nothing to fans
-  if (!isReferee && !gs.votingAllowed) {
-    return (
-      <div style={{ textAlign: "center", padding: 40, color: "#777", fontFamily: "sans-serif" }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>🏟️</div>
-        <div style={{ fontSize: 16, fontWeight: 600, color: "#aaa" }}>Waiting for the Arena to open…</div>
-      </div>
-    );
-  }
-
-  // Filter matches by current voting mode (§3.1: fan only sees opened mode)
-  const visibleMatches = isReferee
-    ? votingMatches
-    : votingMatches.filter(m => {
-        if (!votingMode || votingMode === 'BOTH') return true;
-        return m.matchType === votingMode;
-      });
-
-  const openMatches = visibleMatches.filter(m => m.status === 'OPEN');
-
+  // ── All useCallback hooks declared unconditionally BEFORE any early return ─
   const handleScoreChange = useCallback((name, val) => {
     setScores(prev => ({ ...prev, [name]: val }));
   }, []);
@@ -302,6 +285,7 @@ function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
     }
   }, [selectedMatch, myTxId, teamVote, scores, voteRegistry, socket]);
 
+  // ── cardStyle helper (plain function, not a hook — safe anywhere) ─────────
   const cardStyle = (isSelected) => ({
     background: isSelected ? "#1a2a3a" : "#111",
     border: `1px solid ${isSelected ? "#4fc3f7" : "#333"}`,
@@ -311,6 +295,26 @@ function FanVotingStage({ socket, gameState, myTxId, isReferee }) {
     cursor: "pointer",
     transition: "border 0.15s, background 0.15s",
   });
+
+  // ── §3.1 Blind Voting Gate: early return AFTER all hooks ──────────────────
+  if (!isReferee && !gs.votingAllowed) {
+    return (
+      <div style={{ textAlign: "center", padding: 40, color: "#777", fontFamily: "sans-serif" }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>🏟️</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: "#aaa" }}>Waiting for the Arena to open…</div>
+      </div>
+    );
+  }
+
+  // ── Filter matches by current voting mode ─────────────────────────────────
+  const visibleMatches = isReferee
+    ? votingMatches
+    : votingMatches.filter(m => {
+        if (!votingMode || votingMode === 'BOTH') return true;
+        return m.matchType === votingMode;
+      });
+
+  const openMatches = visibleMatches.filter(m => m.status === 'OPEN');
 
   return (
     <div style={{ fontFamily: "sans-serif", color: "#eee", maxWidth: 900, margin: "0 auto", padding: 12 }}>
